@@ -1,12 +1,23 @@
 # Deployment and Operations
 
-How to get the indexer running in production. Assumes a fresh clone.
+This repository owns the application and container image. CoW production
+infrastructure lives in
+[`cowprotocol/infrastructure/programmatic-orders`](https://github.com/cowprotocol/infrastructure/tree/staging/programmatic-orders).
 
-## Environment Variables
+## Release and Deployment
 
-All config goes in a `.env` file (production) or `.env.local` (local dev). Start from `.env.example`.
+Pushes to `main` publish the image to
+`ghcr.io/cowprotocol/cow-programmatic-orders-api`. Deployments must pin the
+immutable OCI digest, not `latest`, `main`, or another mutable tag.
 
-### RPC URLs
+The infrastructure project owns PostgreSQL, RPC endpoints, secrets, Kubernetes
+resources, probes, resource limits, promotion, and rollback. The application
+container listens on port `3000` and runs `pnpm start`.
+
+## Runtime Configuration
+
+Production configuration is injected by infrastructure. For local development,
+copy `.env.example` to `.env.local`.
 
 | Variable | Required | Description |
 |----------|----------|-------------|

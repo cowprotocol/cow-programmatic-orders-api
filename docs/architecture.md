@@ -244,7 +244,7 @@ See [api-reference.md](./api-reference.md) for the full endpoint list.
 1. Create `src/chains/<name>.ts` implementing the `ChainConfig` interface (use `src/chains/base.ts` as a template). Fill in confirmed contract addresses; leave `null` for any that aren't deployed yet.
 2. Import and add the new chain to `ALL_DEFINED_CHAINS` in `src/chains/index.ts`.
 3. When all required addresses are confirmed, add it to `ACTIVE_CHAINS` in the same file.
-4. Add its RPC URL env var to `.env.local` (or `.env` in production) and to the `ponder` service environment in `docker-compose.yml`.
+4. Add its RPC URL env var to `.env.local` and to the production deployment in the CoW infrastructure repository.
 5. Run `pnpm codegen` to regenerate types.
 
 ## Known Limitations

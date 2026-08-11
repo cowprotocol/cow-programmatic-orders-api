@@ -1,6 +1,6 @@
 # Programmatic Orders API
 
-Indexes on-chain events from [CoW Protocol](https://cow.fi)'s ComposableCoW contract, decodes the programmatic order types the indexer supports (see [`src/decoders/`](./src/decoders/) for the canonical list), and serves the data through a GraphQL API. Built with [Ponder](https://ponder.sh) by [@bleu](https://github.com/bleu) for CoW Protocol.
+Indexes on-chain events from [CoW Protocol](https://cow.fi)'s ComposableCoW contract, decodes the programmatic order types the indexer supports (see [`src/decoders/`](./src/decoders/) for the canonical list), and serves the data through a GraphQL API. Built with [Ponder](https://ponder.sh) by [@bleu](https://github.com/bleu) and maintained by CoW Protocol.
 
 ## Tech stack
 
@@ -15,7 +15,7 @@ Indexes on-chain events from [CoW Protocol](https://cow.fi)'s ComposableCoW cont
 Requires Node.js >= 18.14, [pnpm](https://pnpm.io/), and Docker.
 
 ```bash
-git clone https://github.com/bleu/cow-programmatic-orders-api.git
+git clone git@github.com:cowprotocol/cow-programmatic-orders-api.git
 cd cow-programmatic-orders-api
 pnpm install
 ```
@@ -79,6 +79,7 @@ Use these endpoints to check indexer health without reading logs:
 - [CoW Protocol programmatic orders docs](https://docs.cow.fi/cow-protocol/concepts/order-types/programmatic-orders)
 - [Composable CoW repository](https://github.com/cowprotocol/composable-cow)
 - [Ponder documentation](https://ponder.sh/docs)
+- [CoW infrastructure deployment](https://github.com/cowprotocol/infrastructure/tree/staging/programmatic-orders)
 
 ## License
 

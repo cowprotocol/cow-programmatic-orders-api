@@ -17,8 +17,9 @@
 | `tsconfig.json` | TypeScript config (`moduleResolution: bundler`, strict, ES2022) |
 | `.eslintrc.json` | ESLint extending `eslint-config-ponder` |
 | `docker-compose.yml` | PostgreSQL 16 for local dev |
-| `.env.local.example` | Environment variable template |
+| `.env.example` | Environment variable template |
 | `.github/workflows/ci.yml` | CI: lint + typecheck + codegen on every PR and push to main |
+| `.github/workflows/docker.yml` | Publishes immutable container images to GHCR |
 
 ---
 
@@ -150,7 +151,7 @@ Example query once blocks around `17883049` are indexed:
 - `MerkleRootSet` / `SwapGuardSet` event handlers
 - Order-matching and signature decoding logic (S2.x)
 - `schema/views.ts`
-- Production deployment (Docker image, cloud infra)
+- Production infrastructure definitions (owned by `cowprotocol/infrastructure`)
 - Orderbook API integration
 
 ---
