@@ -23,19 +23,27 @@ copy `.env.example` to `.env.local`.
 |----------|----------|-------------|
 | `MAINNET_RPC_URL` | Yes | Ethereum mainnet RPC endpoint |
 | `GNOSIS_RPC_URL` | Yes | Gnosis Chain RPC endpoint |
-| `MAINNET_WS_RPC_URL` | No | Mainnet WebSocket endpoint — enables Ponder realtime subscriptions; falls back to HTTP polling when unset |
-| `GNOSIS_WS_RPC_URL` | No | Gnosis WebSocket endpoint — enables Ponder realtime subscriptions; falls back to HTTP polling when unset |
+| `ARBITRUM_RPC_URL` | Yes | Arbitrum One RPC endpoint |
+| `BASE_RPC_URL` | Yes | Base RPC endpoint |
+| `BNB_RPC_URL` | Yes | BNB Chain RPC endpoint |
+| `POLYGON_RPC_URL` | Yes | Polygon RPC endpoint |
+| `AVALANCHE_RPC_URL` | Yes | Avalanche C-Chain RPC endpoint |
+| `LINEA_RPC_URL` | Yes | Linea RPC endpoint |
+| `INK_RPC_URL` | Yes | Ink RPC endpoint |
+| `PLASMA_RPC_URL` | Yes | Plasma RPC endpoint |
+| `<CHAIN>_WS_RPC_URL` | No | WebSocket endpoint for an active chain; falls back to HTTP polling when unset |
 
 The indexer is RPC-heavy during initial sync. Rate-limited endpoints will work but sync takes considerably longer. Use an endpoint with generous throughput for production.
 
-> **Adding a new chain:** when a chain is added to `ACTIVE_CHAINS` in `src/chains/index.ts`, its RPC URL env var (defined as `rpcEnvVar` in the chain config file) must be added here and to the `ponder` service environment in `docker-compose.yml` under the `deploy` profile. The RPC used must be a dedicated/paid one, since the public endpoint rate limits is insuficient for the app. The optional WS RPC URL env var (`wsRpcEnvVar`) may be added the same way to enable realtime WS subscriptions.
+> **Adding a new chain:** when a chain is added to `ACTIVE_CHAINS` in `src/chains/index.ts`, its RPC URL env var (defined as `rpcEnvVar` in the chain config file) must be added here and to the infrastructure deployment. The RPC used must be a dedicated/paid one, since the public endpoint rate limits is insuficient for the app. The optional WS RPC URL env var (`wsRpcEnvVar`) may be added the same way to enable realtime WS subscriptions.
 
 ### Database
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `DATABASE_SCHEMA` | Yes | PostgreSQL schema name. `manage.ts` defaults to `programmatic_orders`. |
+| `DATABASE_SCHEMA` | Yes | PostgreSQL schema name. Production uses `programmatic_orders`. |
+| `PONDER_EXPERIMENTAL_DB` | Production | Set to `platform` to reuse an existing checkpoint across compatible deployments. |
 
 Example: `DATABASE_URL=postgresql://cow_programmatic:secretpass@localhost:5433/cow_programmatic`
 
@@ -48,23 +56,8 @@ Example: `DATABASE_URL=postgresql://cow_programmatic:secretpass@localhost:5433/c
 | `MAX_OWNERS_BACKFILL_PER_BLOCK_<chainId>` | No | Per-block cap on how many distinct owners `OwnerBackfillLive` drains on the given chain (e.g. `MAX_OWNERS_BACKFILL_PER_BLOCK_1=40`). Default is 20. Bounds the per-block orderbook request rate and transaction size while the owner-history drain spreads across live-sync blocks from the tip onward. Owner drains are resumable (progress persists in `cow_cache.owner_drain`), so a slow owner costs one bounded slice per firing, never a restart. |
 | `MAX_OWNERS_BACKFILL_CONCURRENCY_<chainId>` | No | How many owner drains `OwnerBackfillLive` runs concurrently within one firing (e.g. `MAX_OWNERS_BACKFILL_CONCURRENCY_1=40`). Default is 20. Keep it equal to the cap so a firing's wall-clock stays around one per-owner slice (~30s). |
 | `DISABLE_SETTLEMENT_FACTORY_CHECK` | No | Skips `getCode` + `FACTORY()` RPC calls in the GPv2Settlement handler. Useful for benchmarking base sync throughput. |
+| `READINESS_MAX_LAG_SECONDS` | No | Maximum age of each chain's newest indexed block. Default is 300 seconds. |
 | `PINO_LOG_LEVEL` | No | Log verbosity: `debug`, `info`, `warn`, `error`. Defaults to Ponder's built-in default. |
-
-### Production Docker Variables
-
-Used by `docker-compose.yml` (deploy profile) and `deployment/manage.ts`:
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PROJECT_PREFIX` | Yes | Docker Compose project name prefix (e.g. `cow-programmatic`) |
-| `POSTGRES_USER` | Yes | PostgreSQL username |
-| `POSTGRES_PASSWORD` | Yes | PostgreSQL password |
-| `POSTGRES_DB` | Yes | PostgreSQL database name |
-| `POSTGRES_PORT` | No | Host port mapped to PostgreSQL. Default: `5433`. |
-| `POSTGRES_MEMORY_LIMIT` | No | Unused. Memory flags are now hardcoded inline in `docker-compose.yml` (tuned for 1G). Adjust the `command:` block proportionally if you allocate more RAM. |
-| `PONDER_EXPOSED_PORT` | No | Host port mapped to the Ponder API. Default: `40000`. Inside the container, Ponder listens on `3000`. |
-
-If you're using the `deploy-remotely.ts` workflow, these variables also need to be set as GitHub Actions secrets (or equivalent) in your CI environment.
 
 ## Database Setup
 
@@ -78,27 +71,9 @@ docker compose up -d
 
 Copy the matching `DATABASE_URL` and `DATABASE_SCHEMA` into `.env.local` from `.env.example`. Ponder manages schema migrations automatically — it creates or updates the tables within the configured schema on startup; you never run migrations manually.
 
-### Production
-
-Production uses the `deploy` profile in the root `docker-compose.yml`, which runs PostgreSQL and the indexer together. See the Docker section below.
-
-
 ## Docker
 
-### Production Stack
-
-```
-docker-compose.yml         # root compose file — dev postgres (default) + deploy profile
-deployment/
-  manage.ts                # Build image, bring up/down the stack
-  deploy-remotely.ts       # Rsync + SSH deploy to a remote host
-```
-
-The deploy services (`postgres-deploy` and `ponder`) live in the root `docker-compose.yml` under the `deploy` profile. Start them with:
-
-```bash
-docker compose --profile deploy up -d
-```
+### Container Image
 
 The `Dockerfile` in the project root builds the Ponder image: two-stage Node 22 Alpine, installs dependencies with `--frozen-lockfile`, exposes port 3000, runs `pnpm start`. The health check hits `/readyz` with a 24-hour start period (initial sync takes hours).
 
@@ -116,32 +91,40 @@ Use **`/readyz`** as the readiness/promotion probe. Ponder's built-in `/ready` f
 
 The staleness check reads each chain's newest indexed block from Ponder's `/status` and compares its timestamp against wall-clock time. Anything older than `READINESS_MAX_LAG_SECONDS` (default 300) makes `/readyz` return 503 naming the chain, its newest block, and the measured lag. It deliberately does not call the RPC for the current head, because it wants to be robust to RPC outages.
 
-Map these to different K8s probe types. The specific timing values (`periodSeconds`, `failureThreshold`, `initialDelaySeconds`) depend on your cluster's SLOs; what matters is which path and port to use:
+CoW production maps `/health` to startup and liveness probes. It maps `/readyz`
+to the readiness probe. The current configuration is:
 
 ```yaml
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  failureThreshold: 30
 livenessProbe:
   httpGet:
     path: /health
-    port: 3000
-  initialDelaySeconds: 30
+    port: http
   periodSeconds: 30
   failureThreshold: 3
 readinessProbe:
   httpGet:
     path: /readyz     # synced AND owner backfill complete
-    port: 3000
-  initialDelaySeconds: 30
+    port: http
   periodSeconds: 10
-  failureThreshold: 18   # 3-minute window before marking unready
+  failureThreshold: 3
 ```
+
+The named `http` port maps to container port `3000`. The infrastructure
+repository owns these values and is authoritative if this example differs.
 
 **Do not** use `/readyz` (or `/ready`) as the liveness probe. A pod that is still indexing (which takes hours on a cold start) returns 200 on `/health` but not on `/readyz`. Using it for liveness would kill the pod before it ever finishes syncing.
 
-A pod in `NotReady` state is not killed — it is simply removed from load-balancer rotation. On a cold start (no existing database), the pod will be `NotReady` for the duration of the historical backfill (hours). That is expected: the old pod (if any) keeps serving traffic during this window, and once the new pod catches up, K8s starts routing to it.
+A pod in `NotReady` state is not killed — it is simply removed from load-balancer rotation. On a cold start (no existing database), the pod will be `NotReady` for the duration of the historical backfill (hours). That is expected.
 
 The container health check (declared in the `Dockerfile`) uses `/readyz` with a 24-hour start period as a pragmatic fallback for single-container deployments, not as a K8s-style probe. Two things about it are easy to get wrong:
 
-Docker never restarts a container because its health check fails — `restart: unless-stopped` only reacts to the process exiting. A wedged-but-alive indexer stays up. The host's `willfarrell/autoheal` daemon (started with `AUTOHEAL_CONTAINER_LABEL=autoheal`) polls for unhealthy labelled containers and restarts them.
+Docker never restarts a container because its health check fails — `restart: unless-stopped` only reacts to the process exiting. A wedged-but-alive indexer stays up.
 
 The 24-hour start period exists because a cold start legitimately fails `/readyz` for hours. During the start period a failing check does not mark the container unhealthy; the first success ends it.
 
@@ -186,29 +169,6 @@ log("warn", "CandidateConfirmer:timeout",   { chainId, block: String(event.block
 Memory settings are hardcoded in the `command:` block of `docker-compose.yml`, tuned for 1G RAM (see the inline comments there). Adjust them proportionally if you change the host's available memory.
 
 
-## Deploying
-
-### How it works in practice
-
-`deploy-remotely.ts` handles the full flow:
-
-```bash
-# Local deploy (builds and starts on this machine)
-npx tsx deployment/deploy-remotely.ts - /path/to/.env
-
-# Remote deploy via SSH
-npx tsx deployment/deploy-remotely.ts user@host:/opt/cow-indexer /path/to/.env
-```
-
-What it does:
-1. Rsyncs the repo to the target (excluding `.git`, `node_modules`, `.env`, logs)
-2. Copies the `.env` file to `deployment/.env` on the remote
-3. Runs `manage.ts up`, which builds a Docker image tagged with the current git SHA and brings up the stack
-
-On the target machine, you need Docker and DNS configured to point at the container's exposed port (`PONDER_EXPOSED_PORT`, default 40000).
-
-To tear down: `npx tsx deployment/manage.ts down --env-file deployment/.env`
-
 ## Cold-Start and Backfill Behavior
 
 ### Timeline
@@ -246,5 +206,3 @@ Block handlers only run during live sync. TWAP parts computed during backfill la
 Non-deterministic generators (PerpetualSwap, GoodAfterTime, TradeAboveThreshold, fee-burners) are handled by OwnerBackfillLive, which drains each owner's full `/account/{owner}/orders` history and upserts discovered orders directly into `discrete_order`. `Unknown` and `CowAmmConstantProduct` generators are stored but excluded from the backfill (`OWNER_BACKFILL_EXCLUDED` in `src/utils/order-types.ts`): unknown handlers are unsupported by definition, and CoW AMM migrated out of ComposableCoW. It runs as a repeating live-sync handler from the tip onward, draining a bounded batch of owners per block (`MAX_OWNERS_BACKFILL_PER_BLOCK_<chainId>`, default 20), so a large owner population spreads across blocks instead of one burst; `/readyz` gates promotion until it's done. Owner drains are resumable: progress (pagination offset, completion flag, delta cursor) persists per owner in `cow_cache.owner_drain`, each attempt runs under a hard ~30s deadline that cancels the in-flight request, and owners are picked least-recently-attempted first — so a whale owner advances a few pages per firing instead of restarting from scratch, and can never starve the rest of the queue.
 
 **Redeploy cost**: Ponder rebuilds onchain tables from scratch on every schema-hash deploy, so OwnerBackfillLive re-runs each time. To avoid re-fetching an owner's entire history per deploy, the full composable-order rows are kept in the durable `cow_cache.composable_order` table (external schema, survives reindex), and `cow_cache.owner_drain` records which owners have ever completed a full drain. On redeploy those owners fetch only the delta newer than their `delta_cursor`; the rest is rebuilt from the cache. The cursor only ever advances after a *complete* pass, so an interrupted fetch can cause overlap but never a gap. The first-ever deploy (empty cache) does the full drain, which is the dominant cost and the main thing `/readyz` waits on.
-
-
