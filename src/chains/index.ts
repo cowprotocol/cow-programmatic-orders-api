@@ -10,7 +10,6 @@ import { plasma } from "./plasma";
 import { avalanche } from "./avalanche";
 import { linea } from "./linea";
 import { ink } from "./ink";
-import { lens } from "./lens";
 import { sepolia } from "./sepolia";
 
 /**
@@ -25,7 +24,7 @@ export const CHAIN_CONFIGS = {
   [SupportedChainId.BNB]: bnb,
   [SupportedChainId.GNOSIS_CHAIN]: gnosis,
   [SupportedChainId.POLYGON]: polygon,
-  [SupportedChainId.LENS]: lens,
+  [SupportedChainId.LENS]: null,
   [SupportedChainId.BASE]: base,
   [SupportedChainId.PLASMA]: plasma,
   [SupportedChainId.ARBITRUM_ONE]: arbitrum,
@@ -49,9 +48,9 @@ export const ALL_DEFINED_CHAINS: ChainConfig[] = Object.values(
  * ACTIVE_CHAINS — the chains this indexer instance actually processes.
  *
  * Explicit in-code selection (not env-gated). To enable a chain: add it here and
- * supply its RPC URL env var in docker-compose.yml and the deployment .env file.
- * To disable: remove it from this array. ponder.config.ts derives all
- * RPC/contract config from this array.
+ * supply its RPC URL through the infrastructure deployment. To disable: remove
+ * it from this array. ponder.config.ts derives all RPC/contract config from this
+ * array.
  *
  * Inactive-but-defined chains (arbitrum, base, bnb, polygon, avalanche, linea,
  * plasma) are fully verified — add one here once its RPC URL is provisioned.

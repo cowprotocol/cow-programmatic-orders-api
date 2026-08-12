@@ -23,17 +23,21 @@ copy `.env.example` to `.env.local`.
 |----------|----------|-------------|
 | `MAINNET_RPC_URL` | Yes | Ethereum mainnet RPC endpoint |
 | `GNOSIS_RPC_URL` | Yes | Gnosis Chain RPC endpoint |
-| `ARBITRUM_RPC_URL` | Yes | Arbitrum One RPC endpoint |
-| `BASE_RPC_URL` | Yes | Base RPC endpoint |
-| `BNB_RPC_URL` | Yes | BNB Chain RPC endpoint |
-| `POLYGON_RPC_URL` | Yes | Polygon RPC endpoint |
-| `AVALANCHE_RPC_URL` | Yes | Avalanche C-Chain RPC endpoint |
-| `LINEA_RPC_URL` | Yes | Linea RPC endpoint |
-| `INK_RPC_URL` | Yes | Ink RPC endpoint |
-| `PLASMA_RPC_URL` | Yes | Plasma RPC endpoint |
+| `ARBITRUM_RPC_URL` | When active | Arbitrum One RPC endpoint |
+| `BASE_RPC_URL` | When active | Base RPC endpoint |
+| `BNB_RPC_URL` | When active | BNB Chain RPC endpoint |
+| `POLYGON_RPC_URL` | When active | Polygon RPC endpoint |
+| `AVALANCHE_RPC_URL` | When active | Avalanche C-Chain RPC endpoint |
+| `LINEA_RPC_URL` | When active | Linea RPC endpoint |
+| `INK_RPC_URL` | When active | Ink RPC endpoint |
+| `PLASMA_RPC_URL` | When active | Plasma RPC endpoint |
 | `<CHAIN>_WS_RPC_URL` | No | WebSocket endpoint for an active chain; falls back to HTTP polling when unset |
 
 The indexer is RPC-heavy during initial sync. Rate-limited endpoints will work but sync takes considerably longer. Use an endpoint with generous throughput for production.
+
+The indexer currently processes Ethereum and Gnosis. Chain configuration and
+RPC variables for Arbitrum, Base, BNB, Polygon, Avalanche, Linea, Ink, and
+Plasma are ready for a later rollout. Sepolia is configured but not indexed.
 
 > **Adding a new chain:** when a chain is added to `ACTIVE_CHAINS` in `src/chains/index.ts`, its RPC URL env var (defined as `rpcEnvVar` in the chain config file) must be added here and to the infrastructure deployment. The RPC used must be a dedicated/paid one, since the public endpoint rate limits is insuficient for the app. The optional WS RPC URL env var (`wsRpcEnvVar`) may be added the same way to enable realtime WS subscriptions.
 
