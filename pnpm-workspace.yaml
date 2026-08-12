@@ -1,2 +1,5 @@
+allowBuilds:
+  esbuild: true
+  protobufjs: true
 patchedDependencies:
   ponder@0.16.6: patches/ponder@0.16.6.patch
