@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cowprotocol/cow-sdk": "^7.3.8",
+    "@cowprotocol/cow-sdk": "^9.2.6",
     "@hono/swagger-ui": "^0.5.3",
     "@hono/zod-openapi": "^0.19.10",
     "drizzle-orm": "0.41.0",

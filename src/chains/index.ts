@@ -24,7 +24,6 @@ export const CHAIN_CONFIGS = {
   [SupportedChainId.BNB]: bnb,
   [SupportedChainId.GNOSIS_CHAIN]: gnosis,
   [SupportedChainId.POLYGON]: polygon,
-  [SupportedChainId.LENS]: null,
   [SupportedChainId.BASE]: base,
   [SupportedChainId.PLASMA]: plasma,
   [SupportedChainId.ARBITRUM_ONE]: arbitrum,
@@ -32,6 +31,7 @@ export const CHAIN_CONFIGS = {
   [SupportedChainId.INK]: ink,
   [SupportedChainId.LINEA]: linea,
   [SupportedChainId.SEPOLIA]: sepolia,
+  [SupportedChainId.SOLANA]: null,
 } satisfies Record<SupportedChainId, ChainConfig | null>;
 
 /**
