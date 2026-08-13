@@ -2,13 +2,36 @@
 
 This repository owns the application and container image. CoW production
 infrastructure lives in
-[`cowprotocol/infrastructure/programmatic-orders`](https://github.com/cowprotocol/infrastructure/tree/staging/programmatic-orders).
+[`cluster/flux-apps/programmatic-orders`](https://github.com/cowprotocol/infrastructure/tree/staging/cluster/flux-apps/programmatic-orders).
 
 ## Release and Deployment
 
-Pushes to `main` publish the image to
-`ghcr.io/cowprotocol/cow-programmatic-orders-api`. Deployments must pin the
-immutable OCI digest, not `latest`, `main`, or another mutable tag.
+A `vX.Y.Z` Git tag publishes the matching image tag to
+`ghcr.io/cowprotocol/cow-programmatic-orders-api`. Production uses these semver
+image tags.
+
+### Creating the release
+
+When the desired changes are on `main`, create the release:
+
+1. Set the version in `package.json`.
+2. Merge the desired changes into `main`.
+3. Open the
+   [GitHub Releases page](https://github.com/cowprotocol/cow-programmatic-orders-api/releases).
+4. Click **Draft a new release**.
+5. Set the target branch to `main`.
+6. Enter the `vX.Y.Z` tag that matches `package.json`.
+7. Click **Create new tag: vX.Y.Z on publish**.
+8. Click **Generate release notes**.
+9. Keep **Set as the latest release** selected.
+10. Click **Publish release**.
+11. Wait for the
+    [Publish Docker image workflow](https://github.com/cowprotocol/cow-programmatic-orders-api/actions/workflows/docker.yml)
+    to succeed.
+
+The workflow rejects a release tag that differs from the `package.json`
+version. Renovate opens an infrastructure PR when a new semver image is
+available. Merge that PR to deploy the new version.
 
 The infrastructure project owns PostgreSQL, RPC endpoints, secrets, Kubernetes
 resources, probes, resource limits, promotion, and rollback. The application
@@ -91,12 +114,13 @@ The indexer exposes two health endpoints with distinct semantics:
 | `/ready` | Ponder sync — has it reached the chain tip? | Only when historical sync is complete |
 | `/readyz` | **Readiness** — synced, keeping up, **and** owner backfill complete | Ponder synced AND every active chain within its staleness budget AND no non-deterministic historical generator still pending |
 
-Use **`/readyz`** as the readiness/promotion probe. Ponder's built-in `/ready` flips as soon as historical sync reaches the tip. `/readyz` waits for all three conditions: Ponder synced, no chain lagging the tip, and `COUNT(historyBackfilled = false) = 0`. Expect it to report pending during the drain, which begins after `/ready` flips. Ponder reserves the `/ready` path, so `/readyz` is a distinct endpoint served by the app.
+Use **`/readyz`** to monitor data completeness. Ponder's built-in `/ready` flips as soon as historical sync reaches the tip. `/readyz` waits for all three conditions: Ponder synced, no chain lagging the tip, and `COUNT(historyBackfilled = false) = 0`. Expect it to report pending during the drain, which begins after `/ready` flips. Ponder reserves the `/ready` path, so `/readyz` is a distinct endpoint served by the app.
 
 The staleness check reads each chain's newest indexed block from Ponder's `/status` and compares its timestamp against wall-clock time. Anything older than `READINESS_MAX_LAG_SECONDS` (default 300) makes `/readyz` return 503 naming the chain, its newest block, and the measured lag. It deliberately does not call the RPC for the current head, because it wants to be robust to RPC outages.
 
-CoW production maps `/health` to startup and liveness probes. It maps `/readyz`
-to the readiness probe. The current configuration is:
+CoW production maps `/health` to all Kubernetes probes. This configuration
+keeps long backfills out of generic Kubernetes rollout alerts. The current
+configuration is:
 
 ```yaml
 startupProbe:
@@ -113,7 +137,7 @@ livenessProbe:
   failureThreshold: 3
 readinessProbe:
   httpGet:
-    path: /readyz     # synced AND owner backfill complete
+    path: /health
     port: http
   periodSeconds: 10
   failureThreshold: 3
@@ -124,7 +148,9 @@ repository owns these values and is authoritative if this example differs.
 
 **Do not** use `/readyz` (or `/ready`) as the liveness probe. A pod that is still indexing (which takes hours on a cold start) returns 200 on `/health` but not on `/readyz`. Using it for liveness would kill the pod before it ever finishes syncing.
 
-A pod in `NotReady` state is not killed — it is simply removed from load-balancer rotation. On a cold start (no existing database), the pod will be `NotReady` for the duration of the historical backfill (hours). That is expected.
+The pod becomes ready when the HTTP server responds. During a backfill, the API
+serves incomplete data and `/readyz` returns 503. Monitor chain lag and
+backfill progress through the indexer metrics and `/readyz`.
 
 The container health check (declared in the `Dockerfile`) uses `/readyz` with a 24-hour start period as a pragmatic fallback for single-container deployments, not as a K8s-style probe. Two things about it are easy to get wrong:
 
@@ -183,7 +209,7 @@ A fresh deployment (no prior `ponder_sync` cache) reindexes from the configured 
 |-------|-----------------|-------|
 | Event backfill | 4–10 hours | Fetches `eth_getLogs` from start block to tip. Bottleneck is RPC throughput; a generous RPC endpoint shortens this. The owner-history drain runs in the next phase (live-sync catch-up), keeping orderbook I/O off the critical path to the tip. |
 | Live-sync catch-up | 5–15 minutes | Block handlers (OrderDiscoveryPoller, CandidateConfirmer, OrderStatusTracker, OwnerBackfillLive, CancellationWatcher) run at "latest". Stale TWAP candidates drain at 500/block; OwnerBackfillLive drains every non-deterministic owner's history from the tip onward. |
-| Full data completeness | Gated by `/readyz` | All generators have candidates or discrete orders; every non-deterministic owner's history is drained (`historyBackfilled` complete). `/readyz` turns 200 only here — use it as the promotion probe. |
+| Full data completeness | Reported by `/readyz` | All generators have candidates or discrete orders; every non-deterministic owner's history is drained (`historyBackfilled` complete). `/readyz` turns 200 only here. |
 
 A reindex that reuses an existing `ponder_sync` cache (same chain, same start blocks) skips the event backfill and completes in minutes.
 
