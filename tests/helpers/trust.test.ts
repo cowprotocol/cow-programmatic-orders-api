@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { classifyCachedRow } from "./trust";
-import { CACHE_VERSION } from "../../../constants";
+import { classifyCachedRow } from "../../src/application/helpers/orderbook/trust";
+import { CACHE_VERSION } from "../../src/constants";
 
 const NOW = 1_800_000_000; // arbitrary wall-clock seconds
 const W = 1200; // 20-minute reorg safety window
