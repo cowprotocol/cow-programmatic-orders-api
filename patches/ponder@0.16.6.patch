@@ -132,7 +132,7 @@ diff --git a/dist/esm/rpc/actions.js b/dist/esm/rpc/actions.js
 index ae284fa3d3ba39b259175a4e9869a5ea6d4da4a2..f2b9ec8daddabf09685e717c186517d04a5d7d8c 100644
 --- a/dist/esm/rpc/actions.js
 +++ b/dist/esm/rpc/actions.js
-@@ -766,13 +766,9 @@ export const standardizeLogs = (logs, request) => {
+@@ -766,13 +766,11 @@ export const standardizeLogs = (logs, request) => {
              throw error;
          }
          if (hexToBigInt(log.logIndex) > BigInt(PG_INTEGER_MAX)) {
@@ -148,4 +148,7 @@ index ae284fa3d3ba39b259175a4e9869a5ea6d4da4a2..f2b9ec8daddabf09685e717c186517d0
 +            continue;
          }
      }
-     return logs;
+-    return logs;
++    return logs.filter(
++        (log) => hexToBigInt(log.logIndex) <= BigInt(PG_INTEGER_MAX),
++    );
