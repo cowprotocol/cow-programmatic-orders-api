@@ -53,6 +53,7 @@ export const ALL_DEFINED_CHAINS: ChainConfig[] = Object.values(
  * array.
  *
  * Inactive-but-defined chains (arbitrum, base, bnb, polygon, avalanche, linea,
- * plasma) are fully verified — add one here once its RPC URL is provisioned.
+ * ink, plasma, sepolia) are fully verified — add one here once its RPC URL is
+ * provisioned.
  */
 export const ACTIVE_CHAINS: ChainConfig[] = [mainnet, gnosis];

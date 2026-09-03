@@ -16,8 +16,14 @@ export const avalanche: ChainConfig = {
   composableCowLive: {
     address: "0xfdaFc9d1902f4e0b84f65F49f244b32b31013b74",
   },
+  // Official deployments:
+  // https://github.com/cowdao-grants/cow-shed/blob/main/networks.json
   cowShedFactory: {
-    address: "0x312f92fe5f1710408b20d52a374fa29e099cfa86", // CREATE2 — same across chains
+    address: [
+      "0x5e284e80f3bd6a7d80a8500d9c49878028110848", // factory for COWShedForComposableCoW
+      "0xc94f7d71d022e773b0b516841ff867c06f39726b", // factory for COWShed
+      "0x312f92fe5f1710408b20d52a374fa29e099cfa86", // legacy
+    ] as const,
     startBlock: 65617025, // verified: tx 0xcf5f0c9a40d26d09e497a6ce871df31ca13d8e72b1724d8ba015368cf36068f1
   },
   gpv2Settlement: {
