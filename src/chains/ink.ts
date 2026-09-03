@@ -16,7 +16,15 @@ export const ink: ChainConfig = {
   composableCowLive: {
     address: "0xfdaFc9d1902f4e0b84f65F49f244b32b31013b74",
   },
-  cowShedFactory: null, // TODO: confirm CoWShedFactory address on Ink
+  // Official deployments:
+  // https://github.com/cowdao-grants/cow-shed/blob/main/networks.json
+  cowShedFactory: {
+    address: [
+      "0x5e284e80f3bd6a7d80a8500d9c49878028110848", // factory for COWShedForComposableCoW
+      "0xc94f7d71d022e773b0b516841ff867c06f39726b", // factory for COWShed
+    ] as const,
+    startBlock: 51750825, // both current factories were deployed in this block
+  },
   gpv2Settlement: null, // TODO: enable once flash-loan infra is confirmed on Ink
   flashLoan: null, // TODO: set { aaveV3: { router, adapterFactory } } once flash-loan infra is confirmed on Ink
   orderbookApiPath: "ink", // TODO: verify CoW Protocol orderbook URL for Ink

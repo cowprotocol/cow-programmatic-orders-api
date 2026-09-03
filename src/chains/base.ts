@@ -16,8 +16,14 @@ export const base: ChainConfig = {
   composableCowLive: {
     address: "0xfdaFc9d1902f4e0b84f65F49f244b32b31013b74",
   },
+  // Official deployments:
+  // https://github.com/cowdao-grants/cow-shed/blob/main/networks.json
   cowShedFactory: {
-    address: "0x312f92fe5f1710408b20d52a374fa29e099cfa86", // CREATE2 — same across chains
+    address: [
+      "0x5e284e80f3bd6a7d80a8500d9c49878028110848", // factory for COWShedForComposableCoW
+      "0xc94f7d71d022e773b0b516841ff867c06f39726b", // factory for COWShed
+      "0x312f92fe5f1710408b20d52a374fa29e099cfa86", // legacy
+    ] as const,
     startBlock: 32986811, // verified: tx 0x29c63a32edbf7b29ae73e6a8e5293b65c65906943ad41092205a473e4bbf56d0
   },
   gpv2Settlement: {

@@ -22,7 +22,7 @@ Stub configs exist for all 12 chains in cow-sdk's `ALL_SUPPORTED_CHAIN_IDS`; con
 Three contracts are indexed:
 
 1. **ComposableCow** -- the main contract. Emits `ConditionalOrderCreated` for new programmatic orders.
-2. **CoWShedFactory** -- emits `COWShedBuilt` when a user deploys a CoWShed proxy wallet. On Gnosis there are two factory addresses (the current `CoWShedForComposableCoW` factory and a legacy `COWShed` factory), both indexed through a single Ponder contract entry using an address array.
+2. **CoWShedFactory** -- emits `COWShedBuilt` when a user deploys a CoWShed proxy wallet. Each chain config can provide multiple factory addresses. A single Ponder contract entry indexes all addresses and preserves owner mappings across factory upgrades.
 3. **GPv2Settlement** -- the CoW Protocol settlement contract. Filtered to only `Settlement` events where the solver is the FlashLoanRouter address, so the volume is very low.
 
 ## Data Flow
