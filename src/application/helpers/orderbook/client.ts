@@ -29,7 +29,7 @@ import {
 import { TimeoutError, withTimeout } from "../withTimeout";
 import { bumpGeneratorsUpdatedAt } from "../updatedAtBlock";
 import { log } from "../logger";
-import { refreshTwapExecutedTotals } from "../executedAmounts";
+import { refreshTwapExecutionState } from "../executedAmounts";
 import { fetchAccountOrders, fetchOrdersByUids } from "./http";
 import {
   advanceOwnerOffset,
@@ -306,7 +306,12 @@ export async function upsertDiscreteOrders(
   }
 
   await bumpGeneratorsUpdatedAt(context, chainId, changedGeneratorIds, blockNumber);
-  await refreshTwapExecutedTotals(context, chainId, changedGeneratorIds);
+  await refreshTwapExecutionState(
+    context,
+    chainId,
+    changedGeneratorIds,
+    blockNumber,
+  );
   return changedCount;
 }
 

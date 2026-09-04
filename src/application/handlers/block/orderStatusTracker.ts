@@ -1,6 +1,6 @@
 import { ponder } from "ponder:registry";
-import { candidateDiscreteOrder, conditionalOrderGenerator, discreteOrder } from "ponder:schema";
-import { and, asc, eq, exists, gte, inArray, isNull, lte, notExists, notInArray, or, sql } from "ponder";
+import { conditionalOrderGenerator, discreteOrder } from "ponder:schema";
+import { and, asc, eq, gte, inArray, isNull, lte, notInArray, or, sql } from "ponder";
 import { REORG_SAFETY_WINDOW_SECONDS, type SupportedChainId } from "../../../data";
 import {
   DEFAULT_MAX_DISCRETE_ORDERS_PER_BLOCK,
@@ -9,7 +9,7 @@ import {
 import { fetchOrderStatusByUids } from "../../helpers/orderbookClient";
 import { bumpGeneratorsUpdatedAt } from "../../helpers/updatedAtBlock";
 import { log } from "../../helpers/logger";
-import { refreshTwapExecutedTotals } from "../../helpers/executedAmounts";
+import { refreshTwapExecutionState } from "../../helpers/executedAmounts";
 
 const VALID_DISCRETE_STATUSES = new Set(["fulfilled", "unfilled", "expired", "cancelled"]);
 
@@ -108,10 +108,11 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
         event.block.number,
       );
 
-      await refreshTwapExecutedTotals(
+      await refreshTwapExecutionState(
         context,
         chainId,
         rowsToUpdate.map((row) => row.conditionalOrderGeneratorId),
+        event.block.number,
       );
 
       log("info", "OrderStatusTracker:DONE", { block: String(event.block.number), chainId, open: openOrders.length, updated: rowsToUpdate.length });
@@ -249,7 +250,12 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
 
       if (touchedGeneratorIds.length > 0) {
         await bumpGeneratorsUpdatedAt(context, chainId, touchedGeneratorIds, event.block.number);
-        await refreshTwapExecutedTotals(context, chainId, touchedGeneratorIds);
+        await refreshTwapExecutionState(
+          context,
+          chainId,
+          touchedGeneratorIds,
+          event.block.number,
+        );
         log("info", "OrderStatusTracker:REORG_HEAL", {
           block: String(event.block.number),
           chainId,
@@ -309,63 +315,10 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
     event.block.number,
   );
 
-  // A deterministic generator is complete once every known part is terminal.
-  // This also repairs generators whose final part settled before this check existed.
-  await context.db.sql
-    .update(conditionalOrderGenerator)
-    .set({
-      status: "Completed",
-      lastPollResult: "statusTracker:allTerminal",
-      updatedAtBlock: event.block.number,
-    })
-    .where(
-      and(
-        eq(conditionalOrderGenerator.chainId, chainId),
-        eq(conditionalOrderGenerator.status, "Active"),
-        eq(conditionalOrderGenerator.allCandidatesKnown, true),
-        exists(
-          context.db.sql
-            .select({ orderUid: discreteOrder.orderUid })
-            .from(discreteOrder)
-            .where(
-              and(
-                eq(discreteOrder.chainId, chainId),
-                eq(
-                  discreteOrder.conditionalOrderGeneratorId,
-                  conditionalOrderGenerator.eventId,
-                ),
-              ),
-            ),
-        ),
-        notExists(
-          context.db.sql
-            .select({ orderUid: discreteOrder.orderUid })
-            .from(discreteOrder)
-            .where(
-              and(
-                eq(discreteOrder.chainId, chainId),
-                eq(
-                  discreteOrder.conditionalOrderGeneratorId,
-                  conditionalOrderGenerator.eventId,
-                ),
-                eq(discreteOrder.status, "open"),
-              ),
-            ),
-        ),
-        notExists(
-          context.db.sql
-            .select({ orderUid: candidateDiscreteOrder.orderUid })
-            .from(candidateDiscreteOrder)
-            .where(
-              and(
-                eq(candidateDiscreteOrder.chainId, chainId),
-                eq(
-                  candidateDiscreteOrder.conditionalOrderGeneratorId,
-                  conditionalOrderGenerator.eventId,
-                ),
-              ),
-            ),
-        ),
-      ),
-    );
+  await refreshTwapExecutionState(
+    context,
+    chainId,
+    expired.map((r) => r.generatorId),
+    event.block.number,
+  );
 });

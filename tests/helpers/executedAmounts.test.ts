@@ -6,6 +6,8 @@ vi.mock("ponder:schema", () => ({
     eventId: "eventId",
     chainId: "chainId",
     orderType: "orderType",
+    status: "status",
+    allCandidatesKnown: "allCandidatesKnown",
   },
   discreteOrder: {
     conditionalOrderGeneratorId: "conditionalOrderGeneratorId",
@@ -13,6 +15,11 @@ vi.mock("ponder:schema", () => ({
     executedSellAmount: "executedSellAmount",
     executedBuyAmount: "executedBuyAmount",
     executedFee: "executedFee",
+    status: "status",
+  },
+  candidateDiscreteOrder: {
+    conditionalOrderGeneratorId: "conditionalOrderGeneratorId",
+    chainId: "chainId",
   },
 }));
 
@@ -21,25 +28,70 @@ vi.mock("ponder", () => ({
   eq: vi.fn(),
   inArray: vi.fn(),
   // The aggregate fragments call .as(alias) — required so the three sum columns
-  // get distinct names (see refreshTwapExecutedTotals).
+  // get distinct names (see refreshTwapExecutionState).
   sql: vi.fn(() => ({ as: vi.fn((alias: string) => ({ alias })) })),
 }));
 
-import { refreshTwapExecutedTotals } from "../../src/application/helpers/executedAmounts";
+import { refreshTwapExecutionState } from "../../src/application/helpers/executedAmounts";
+
+function generator(
+  eventId: string,
+  overrides: Partial<{
+    orderType: string;
+    status: string;
+    allCandidatesKnown: boolean;
+  }> = {},
+) {
+  return {
+    eventId,
+    orderType: "TWAP",
+    status: "Active",
+    allCandidatesKnown: true,
+    ...overrides,
+  };
+}
+
+function totals(
+  generatorId: string,
+  overrides: Partial<{ partCount: number; openPartCount: number }> = {},
+) {
+  return {
+    generatorId,
+    executedSellAmount: "100",
+    executedBuyAmount: "90",
+    executedFee: "2",
+    partCount: 2,
+    openPartCount: 1,
+    ...overrides,
+  };
+}
 
 /** Fake context: the first select resolves the generator-type lookup, the
  *  second (with .groupBy) resolves the per-generator aggregate. */
 function makeContext(
-  generators: { eventId: string; orderType: string }[],
+  generators: {
+    eventId: string;
+    orderType: string;
+    status: string;
+    allCandidatesKnown: boolean;
+  }[],
   totals: {
     generatorId: string;
     executedSellAmount: string;
     executedBuyAmount: string;
     executedFee: string;
+    partCount: number;
+    openPartCount: number;
   }[],
+  candidateGeneratorIds: string[] = [],
 ) {
   let selectCalls = 0;
-  const groupBy = vi.fn().mockResolvedValue(totals);
+  const groupBy = vi
+    .fn()
+    .mockResolvedValueOnce(totals)
+    .mockResolvedValueOnce(
+      candidateGeneratorIds.map((generatorId) => ({ generatorId })),
+    );
   const where = vi.fn(() => {
     selectCalls++;
     if (selectCalls === 1) return Promise.resolve(generators);
@@ -58,28 +110,19 @@ function makeContext(
   };
 }
 
-describe("refreshTwapExecutedTotals", () => {
+describe("refreshTwapExecutionState", () => {
   it("writes totals for TWAP parents and zeros for TWAP parents without parts", async () => {
     const { context, update, set } = makeContext(
-      [
-        { eventId: "generator-a", orderType: "TWAP" },
-        { eventId: "generator-b", orderType: "TWAP" },
-      ],
-      [
-        {
-          generatorId: "generator-a",
-          executedSellAmount: "100",
-          executedBuyAmount: "90",
-          executedFee: "2",
-        },
-      ],
+      [generator("generator-a"), generator("generator-b")],
+      [totals("generator-a")],
     );
 
-    await refreshTwapExecutedTotals(context, 100, [
-      "generator-a",
-      "generator-a",
-      "generator-b",
-    ]);
+    await refreshTwapExecutionState(
+      context,
+      100,
+      ["generator-a", "generator-a", "generator-b"],
+      123n,
+    );
 
     expect(update).toHaveBeenCalledTimes(2);
     expect(update).toHaveBeenNthCalledWith(1, expect.anything(), { chainId: 100, eventId: "generator-a" });
@@ -102,11 +145,16 @@ describe("refreshTwapExecutedTotals", () => {
 
   it("skips non-TWAP parents entirely", async () => {
     const { context, select, update } = makeContext(
-      [{ eventId: "generator-swap", orderType: "PerpetualSwap" }],
+      [
+        generator("generator-swap", {
+          orderType: "PerpetualSwap",
+          allCandidatesKnown: false,
+        }),
+      ],
       [],
     );
 
-    await refreshTwapExecutedTotals(context, 100, ["generator-swap"]);
+    await refreshTwapExecutionState(context, 100, ["generator-swap"], 123n);
 
     expect(select).toHaveBeenCalledTimes(1); // type lookup only, no aggregate
     expect(update).not.toHaveBeenCalled();
@@ -115,9 +163,59 @@ describe("refreshTwapExecutedTotals", () => {
   it("does nothing without affected parents", async () => {
     const { context, select, update } = makeContext([], []);
 
-    await refreshTwapExecutedTotals(context, 100, []);
+    await refreshTwapExecutionState(context, 100, [], 123n);
 
     expect(select).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("completes an active TWAP without open parts or candidates", async () => {
+    const { context, set } = makeContext(
+      [generator("generator-a")],
+      [totals("generator-a", { openPartCount: 0 })],
+    );
+
+    const completed = await refreshTwapExecutionState(
+      context,
+      100,
+      ["generator-a"],
+      123n,
+    );
+
+    expect(completed).toEqual(["generator-a"]);
+    expect(set).toHaveBeenCalledWith({
+      additionalData: {
+        executedSellAmount: "100",
+        executedBuyAmount: "90",
+        executedFee: "2",
+      },
+      status: "Completed",
+      lastPollResult: "executionState:allTerminal",
+      updatedAtBlock: 123n,
+    });
+  });
+
+  it("keeps a TWAP active while a candidate remains", async () => {
+    const { context, set } = makeContext(
+      [generator("generator-a")],
+      [totals("generator-a", { partCount: 1, openPartCount: 0 })],
+      ["generator-a"],
+    );
+
+    const completed = await refreshTwapExecutionState(
+      context,
+      100,
+      ["generator-a"],
+      123n,
+    );
+
+    expect(completed).toEqual([]);
+    expect(set).toHaveBeenCalledWith({
+      additionalData: {
+        executedSellAmount: "100",
+        executedBuyAmount: "90",
+        executedFee: "2",
+      },
+    });
   });
 });
