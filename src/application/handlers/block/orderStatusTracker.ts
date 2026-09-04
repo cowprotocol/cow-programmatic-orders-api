@@ -1,6 +1,6 @@
 import { ponder } from "ponder:registry";
-import { conditionalOrderGenerator, discreteOrder } from "ponder:schema";
-import { and, asc, eq, gte, inArray, isNull, lte, notInArray, or, sql } from "ponder";
+import { candidateDiscreteOrder, conditionalOrderGenerator, discreteOrder } from "ponder:schema";
+import { and, asc, eq, exists, gte, inArray, isNull, lte, notExists, notInArray, or, sql } from "ponder";
 import { REORG_SAFETY_WINDOW_SECONDS, type SupportedChainId } from "../../../data";
 import {
   DEFAULT_MAX_DISCRETE_ORDERS_PER_BLOCK,
@@ -308,4 +308,64 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
     expired.map((r) => r.generatorId),
     event.block.number,
   );
+
+  // A deterministic generator is complete once every known part is terminal.
+  // This also repairs generators whose final part settled before this check existed.
+  await context.db.sql
+    .update(conditionalOrderGenerator)
+    .set({
+      status: "Completed",
+      lastPollResult: "statusTracker:allTerminal",
+      updatedAtBlock: event.block.number,
+    })
+    .where(
+      and(
+        eq(conditionalOrderGenerator.chainId, chainId),
+        eq(conditionalOrderGenerator.status, "Active"),
+        eq(conditionalOrderGenerator.allCandidatesKnown, true),
+        exists(
+          context.db.sql
+            .select({ orderUid: discreteOrder.orderUid })
+            .from(discreteOrder)
+            .where(
+              and(
+                eq(discreteOrder.chainId, chainId),
+                eq(
+                  discreteOrder.conditionalOrderGeneratorId,
+                  conditionalOrderGenerator.eventId,
+                ),
+              ),
+            ),
+        ),
+        notExists(
+          context.db.sql
+            .select({ orderUid: discreteOrder.orderUid })
+            .from(discreteOrder)
+            .where(
+              and(
+                eq(discreteOrder.chainId, chainId),
+                eq(
+                  discreteOrder.conditionalOrderGeneratorId,
+                  conditionalOrderGenerator.eventId,
+                ),
+                eq(discreteOrder.status, "open"),
+              ),
+            ),
+        ),
+        notExists(
+          context.db.sql
+            .select({ orderUid: candidateDiscreteOrder.orderUid })
+            .from(candidateDiscreteOrder)
+            .where(
+              and(
+                eq(candidateDiscreteOrder.chainId, chainId),
+                eq(
+                  candidateDiscreteOrder.conditionalOrderGeneratorId,
+                  conditionalOrderGenerator.eventId,
+                ),
+              ),
+            ),
+        ),
+      ),
+    );
 });
