@@ -6,7 +6,7 @@ import {
 } from "ponder:schema";
 import type { Context } from "ponder:registry";
 
-const ZERO_TOTALS: TwapAdditionalData = {
+export const ZERO_TOTALS: TwapAdditionalData = {
   executedSellAmount: "0",
   executedBuyAmount: "0",
   executedFee: "0",

@@ -46,6 +46,7 @@ import { encodeAbiParameters, keccak256, type Hex } from "viem";
 import { getOrderTypeFromHandler, isOwnerBackfillEligible, type OrderType } from "../../utils/order-types";
 import { decodeStaticInput } from "../../decoders/index";
 import { precomputeAndDiscover } from "../helpers/uidPrecompute";
+import { ZERO_TOTALS } from "../helpers/executedAmounts";
 import { CirclesBackingOrderAbi } from "../../../abis/CirclesBackingOrderAbi";
 import { log } from "../helpers/logger";
 
@@ -221,6 +222,7 @@ async function insertGenerator(
       status: "Active",
       decodedParams,
       decodeError,
+      additionalData: orderType === "TWAP" ? ZERO_TOTALS : null,
       txHash: event.transaction.hash,
       nextCheckBlock: event.block.number,
       // Only non-deterministic generators created during historical backfill need an
