@@ -92,8 +92,7 @@ export default createConfig({
     // Block handler intervals are tuned per chain to keep total handler time
     // well within the available window while reducing unnecessary invocations.
     //
-    // All handlers fire together on the same block every interval blocks.
-    // Simpler and more efficient than coprime staggering.
+    // Candidate and status checks run every block for faster part updates.
 
     // OrderDiscoveryPoller — RPC multicall for non-deterministic generators.
     OrderDiscoveryPoller: {
@@ -110,7 +109,7 @@ export default createConfig({
       chain: Object.fromEntries(
         ACTIVE_CHAINS.map((c) => [
           c.name,
-          { startBlock: "latest" as const, interval: c.blockTime < 8 ? 10 : 4 },
+          { startBlock: "latest" as const, interval: 1 },
         ])
       ),
       interval: 1,
@@ -120,7 +119,7 @@ export default createConfig({
       chain: Object.fromEntries(
         ACTIVE_CHAINS.map((c) => [
           c.name,
-          { startBlock: "latest" as const, interval: c.blockTime < 8 ? 10 : 4 },
+          { startBlock: "latest" as const, interval: 1 },
         ])
       ),
       interval: 1,
