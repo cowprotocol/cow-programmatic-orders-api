@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "ponder dev",
+    "dev": "pnpm run dev:db && ponder dev --hostname 127.0.0.1",
+    "dev:db": "POSTGRES_PORT=127.0.0.1:5432 docker compose up -d --wait postgres",
     "start": "ponder start -p 3000 --schema ${DATABASE_SCHEMA:-public} --log-format json",
     "db": "ponder db",
     "codegen": "ponder codegen",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:int": "vitest run --config vitest.schema.config.ts"
   },
   "dependencies": {
     "@cowprotocol/cow-sdk": "^9.2.6",
@@ -25,6 +27,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.2.13",
     "@types/node": "^20.9.0",
     "eslint": "^8.53.0",
     "eslint-config-ponder": "^0.16.2",
