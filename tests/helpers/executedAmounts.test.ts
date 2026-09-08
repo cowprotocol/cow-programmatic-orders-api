@@ -111,6 +111,54 @@ function makeContext(
 }
 
 describe("refreshTwapExecutionState", () => {
+  it("reopens a completed TWAP after a part reverts, then completes it again", async () => {
+    const parent = generator("generator-a");
+    for (const [openPartCount, expectedStatus, blockNumber] of [
+      [0, "Completed", 123n],
+      [1, "Active", 124n],
+      [0, "Completed", 125n],
+    ] as const) {
+      const { context, set } = makeContext(
+        [parent],
+        [totals(parent.eventId, { openPartCount })],
+      );
+      const completed = await refreshTwapExecutionState(context, 100, [parent.eventId], blockNumber);
+
+      expect(set).toHaveBeenCalledWith(expect.objectContaining({
+        status: expectedStatus,
+        updatedAtBlock: blockNumber,
+        lastPollResult: expectedStatus === "Active"
+          ? "executionState:reopened"
+          : "executionState:allTerminal",
+      }));
+      expect(completed).toEqual(expectedStatus === "Completed" ? [parent.eventId] : []);
+      parent.status = expectedStatus;
+    }
+  });
+
+  it("reopens a completed TWAP with a remaining candidate", async () => {
+    const { context, set } = makeContext(
+      [generator("generator-a", { status: "Completed" })],
+      [totals("generator-a", { openPartCount: 0 })],
+      ["generator-a"],
+    );
+    await refreshTwapExecutionState(context, 100, ["generator-a"], 124n);
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({
+      status: "Active",
+      updatedAtBlock: 124n,
+    }));
+  });
+
+  it.each([0, 1])("preserves a cancelled parent with %i open parts", async (openPartCount) => {
+    const { context, set } = makeContext(
+      [generator("generator-a", { status: "Cancelled" })],
+      [totals("generator-a", { openPartCount })],
+    );
+    const completed = await refreshTwapExecutionState(context, 100, ["generator-a"], 124n);
+    expect(completed).toEqual([]);
+    expect(set.mock.calls[0]?.[0]).not.toHaveProperty("status");
+  });
+
   it("writes totals for TWAP parents and zeros for TWAP parents without parts", async () => {
     const { context, update, set } = makeContext(
       [generator("generator-a"), generator("generator-b")],

@@ -111,6 +111,11 @@ export async function refreshTwapExecutionState(
       aggregate.partCount > 0 &&
       aggregate.openPartCount === 0 &&
       !candidateGeneratorIds.has(generator.eventId);
+    // Orderbook reorg reconciliation can reopen a previously terminal part.
+    const isReopened =
+      generator.status === "Completed" &&
+      ((aggregate?.openPartCount ?? 0) > 0 ||
+        candidateGeneratorIds.has(generator.eventId));
 
     await context.db
       .update(conditionalOrderGenerator, { chainId, eventId: generator.eventId })
@@ -119,6 +124,11 @@ export async function refreshTwapExecutionState(
         ...(isComplete && {
           status: "Completed" as const,
           lastPollResult: "executionState:allTerminal",
+          updatedAtBlock: blockNumber,
+        }),
+        ...(isReopened && {
+          status: "Active" as const,
+          lastPollResult: "executionState:reopened",
           updatedAtBlock: blockNumber,
         }),
       });
