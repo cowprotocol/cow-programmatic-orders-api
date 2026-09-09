@@ -24,6 +24,7 @@ ComposableCoW contract (per active chain — see src/chains/index.ts)
 - `abis/` — Contract ABIs
 - `src/chains/` — Chain configs and contract addresses (add a chain file, then register it in `src/chains/index.ts`)
 - `schema/tables.ts` — Table definitions; `schema/relations.ts` — Drizzle relations
+- `schema/views.ts` — Unified `partOrders` and `programmaticOrders` views; see `docs/api-reference.md` for query and sync guidance
 - `src/application/handlers/` — Event handlers (add new handlers here)
 - `src/api/index.ts` — Hono API exposing GraphQL and Ponder SQL client
 

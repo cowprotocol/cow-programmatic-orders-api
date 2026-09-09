@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { graphql, sql } from "ponder";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as schema from "../../ponder.schema";
+import { gqlDocsMiddleware } from "../../src/api/gql-docs";
 
 const client = new PGlite();
 const db = drizzle(client, { casing: "snake_case" });
@@ -29,6 +30,7 @@ beforeAll(async () => {
     readonlyQB: { raw: db, wrap: (query: (database: typeof db) => Promise<unknown>) => query(db) },
   });
   app = new Hono();
+  app.use("/graphql", gqlDocsMiddleware);
   app.use("/graphql", graphql({ db: db as never, schema }));
 });
 
@@ -89,6 +91,43 @@ async function queryPage(offset = 0, direction = "asc", status?: string) {
 }
 
 describe("unified part orders GraphQL", () => {
+  it("exposes view and cursor documentation through introspection", async () => {
+    const response = await app.request("/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: "{ __schema { types { name description fields { name description } } } }",
+      }),
+    });
+    const body = await response.json() as {
+      errors?: unknown;
+      data: { __schema: { types: {
+        name: string;
+        description: string | null;
+        fields: { name: string; description: string | null }[] | null;
+      }[] } };
+    };
+    expect(body.errors).toBeUndefined();
+    const types = body.data.__schema.types;
+    for (const name of ["partOrder", "programmaticOrder"]) {
+      const type = types.find((type) => type.name === name);
+      expect(type?.description).toBeTruthy();
+      expect(type?.fields?.length).toBeGreaterThan(0);
+      for (const field of type?.fields ?? []) {
+        expect(field.description, `${name}.${field.name}`).toBeTruthy();
+      }
+    }
+    const description = (name: string, field: string) =>
+      types.find((type) => type.name === name)?.fields?.find((item) => item.name === field)?.description;
+    expect(description("partOrder", "status")).toContain("unconfirmed");
+    expect(description("partOrder", "sortKey")).toContain("orderUid");
+    expect(description("programmaticOrder", "partOrdersCount")).toContain("unique known parts");
+    for (const name of ["conditionalOrderGenerator", "programmaticOrder"]) {
+      expect(description(name, "updatedAtBlock")).toContain("Fetch all partOrders pages");
+      expect(description(name, "updatedAtBlock")).toContain("new candidates");
+    }
+  });
+
   it("supports Ponder SQL-client view dependency discovery", async () => {
     // Use the installed runtime parser: PostgreSQL accepting a view is not enough.
     const parserUrl = new URL("../../node_modules/ponder/dist/esm/utils/sql-parse.js", import.meta.url).href;
