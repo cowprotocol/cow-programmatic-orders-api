@@ -24,7 +24,7 @@ import { fetchOrderStatusByUids } from "./orderbookClient";
 import { type OrderType, DETERMINISTIC_ORDER_TYPE } from "../../utils/order-types";
 import { log } from "./logger";
 import { MAX_TWAP_PRECOMPUTE_PARTS } from "../../constants";
-import { refreshTwapExecutedTotals } from "./executedAmounts";
+import { refreshTwapExecutionState } from "./executedAmounts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -178,7 +178,12 @@ export async function precomputeAndDiscover(
   }
 
   if (discreteRows.length > 0) {
-    await refreshTwapExecutedTotals(context, chainId, [generatorEventId]);
+    await refreshTwapExecutionState(
+      context,
+      chainId,
+      [generatorEventId],
+      blockNumber,
+    );
   }
 
   const allTerminal = precomputed.every((o) => {

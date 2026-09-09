@@ -12,7 +12,7 @@ import { withTimeout } from "../../helpers/withTimeout";
 import { bumpGeneratorsUpdatedAt } from "../../helpers/updatedAtBlock";
 import { log } from "../../helpers/logger";
 import { type DiscreteStatus } from "./shared";
-import { refreshTwapExecutedTotals } from "../../helpers/executedAmounts";
+import { refreshTwapExecutionState } from "../../helpers/executedAmounts";
 
 // ─── CandidateConfirmer ──────────────────────────────────────────────────────
 // Checks if candidate discrete orders exist on the Orderbook API.
@@ -142,10 +142,11 @@ ponder.on("CandidateConfirmer:block", async ({ event, context }) => {
         event.block.number,
       );
 
-      await refreshTwapExecutedTotals(
+      await refreshTwapExecutionState(
         context,
         chainId,
         orphanCandidates.map((candidate) => candidate.generatorId),
+        event.block.number,
       );
 
       const preflightKnown = preflightStatuses.size;
@@ -380,10 +381,15 @@ ponder.on("CandidateConfirmer:block", async ({ event, context }) => {
   }
 
   if (confirmed > 0 || stale.length > 0) {
-    await refreshTwapExecutedTotals(context, chainId, [
-      ...rowsToUpsert.map((row) => row.conditionalOrderGeneratorId),
-      ...stale.map((candidate) => candidate.generatorId),
-    ]);
+    await refreshTwapExecutionState(
+      context,
+      chainId,
+      [
+        ...rowsToUpsert.map((row) => row.conditionalOrderGeneratorId),
+        ...stale.map((candidate) => candidate.generatorId),
+      ],
+      event.block.number,
+    );
     log("info", "CandidateConfirmer:DONE", { block: String(event.block.number), chainId, candidates: unconfirmed.length, confirmed, expired: stale.length });
   }
 });

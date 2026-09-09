@@ -9,7 +9,7 @@ import {
 import { fetchOrderStatusByUids } from "../../helpers/orderbookClient";
 import { bumpGeneratorsUpdatedAt } from "../../helpers/updatedAtBlock";
 import { log } from "../../helpers/logger";
-import { refreshTwapExecutedTotals } from "../../helpers/executedAmounts";
+import { refreshTwapExecutionState } from "../../helpers/executedAmounts";
 
 const VALID_DISCRETE_STATUSES = new Set(["fulfilled", "unfilled", "expired", "cancelled"]);
 
@@ -108,10 +108,11 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
         event.block.number,
       );
 
-      await refreshTwapExecutedTotals(
+      await refreshTwapExecutionState(
         context,
         chainId,
         rowsToUpdate.map((row) => row.conditionalOrderGeneratorId),
+        event.block.number,
       );
 
       log("info", "OrderStatusTracker:DONE", { block: String(event.block.number), chainId, open: openOrders.length, updated: rowsToUpdate.length });
@@ -249,7 +250,12 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
 
       if (touchedGeneratorIds.length > 0) {
         await bumpGeneratorsUpdatedAt(context, chainId, touchedGeneratorIds, event.block.number);
-        await refreshTwapExecutedTotals(context, chainId, touchedGeneratorIds);
+        await refreshTwapExecutionState(
+          context,
+          chainId,
+          touchedGeneratorIds,
+          event.block.number,
+        );
         log("info", "OrderStatusTracker:REORG_HEAL", {
           block: String(event.block.number),
           chainId,
@@ -303,6 +309,13 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
     .returning({ generatorId: discreteOrder.conditionalOrderGeneratorId });
 
   await bumpGeneratorsUpdatedAt(
+    context,
+    chainId,
+    expired.map((r) => r.generatorId),
+    event.block.number,
+  );
+
+  await refreshTwapExecutionState(
     context,
     chainId,
     expired.map((r) => r.generatorId),
