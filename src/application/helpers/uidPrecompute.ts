@@ -214,7 +214,7 @@ export async function precomputeAndDiscover(
   // OrderDiscoveryPoller can skip this generator, OrderStatusTracker tracks the open orders.
   await context.db.sql
     .update(conditionalOrderGenerator)
-    .set({ allCandidatesKnown: true })
+    .set({ allCandidatesKnown: true, updatedAtBlock: blockNumber })
     .where(
       and(
         eq(conditionalOrderGenerator.chainId, chainId),

@@ -24,6 +24,7 @@ import {
 } from "../../helpers/pollResultErrors";
 import { computeOrderUid, type GPv2OrderData } from "../../helpers/orderUid";
 import { log } from "../../helpers/logger";
+import { bumpGeneratorsUpdatedAt } from "../../helpers/updatedAtBlock";
 import { type OrderType } from "../../../utils/order-types";
 
 const SINGLE_SHOT_NON_DETERMINISTIC: readonly OrderType[] = ["GoodAfterTime", "TradeAboveThreshold"];
@@ -159,7 +160,11 @@ ponder.on("OrderDiscoveryPoller:block", async ({ event, context }) => {
             validTo: orderData.validTo,
             creationDate: event.block.timestamp,
           })
-          .onConflictDoNothing(),
+          .onConflictDoNothing()
+          .returning({ generatorId: candidateDiscreteOrder.conditionalOrderGeneratorId })
+          .then((inserted) => bumpGeneratorsUpdatedAt(
+            context, chainId, inserted.map((row) => row.generatorId), currentBlock,
+          )),
       );
 
       const isSingleShot = SINGLE_SHOT_NON_DETERMINISTIC.includes(order.orderType);

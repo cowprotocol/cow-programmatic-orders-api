@@ -22,10 +22,12 @@ The default local URL is `http://localhost:42069` when using `pnpm dev`. The pro
 
 ## GraphQL
 
-Ponder auto-generates the GraphQL schema from the tables in `ponder.schema.ts`. Open `/graphql` (or `/`) in a browser for GraphiQL — every table, field, and query argument is documented inline.
+Ponder auto-generates the GraphQL schema from the tables and views in `ponder.schema.ts`. Open `/graphql` (or `/`) in a browser for GraphiQL — every table, field, and query argument is documented inline.
 
 High-level map of what's queryable:
 
+- **`partOrder` / `partOrders`** — unified view of discrete orders and unconfirmed candidates. Each `(chainId, orderUid)` appears once, with the discrete row taking precedence.
+- **`programmaticOrder` / `programmaticOrders`** — generator view with `creationDate` and `partOrdersCount`. The count includes all unique known parts, including candidates, but not undiscovered parts.
 - **`conditionalOrderGenerator`** — one row per programmatic order registered via `ComposableCoW.create()` or `createWithContext()`. Holds decoded params, order type, `owner` (raw on-chain address), `resolvedOwner` (looked up in `ownerMapping` at insert time; falls back to `owner` if no mapping exists yet), and lifecycle status.
 - **`discreteOrder`** — individual CoW Protocol orders produced by a generator (a TWAP with 10 parts produces 10 discrete orders). Tracks orderbook status and executed amounts.
 - **`candidateDiscreteOrder`** — unconfirmed discrete orders discovered by the block handler, awaiting confirmation against the orderbook API.
@@ -34,6 +36,18 @@ High-level map of what's queryable:
 - **`flashLoanOrder`** — standalone CoW orders settled by an Aave V3 flash-loan adapter (not ComposableCoW conditional orders). Executed-only, recorded from the on-chain `Trade` event at settlement. See [supported-order-types.md](./supported-order-types.md#aave-flash-loan-orders).
 
 For schema details (columns, indexes, relations), see [architecture.md](./architecture.md).
+
+### Known parts and incremental sync
+
+Candidates have status `unconfirmed` and null execution amounts, regardless of parent status.
+`sortKey` orders parts by expiration, UID, and chain, with deterministic tie-breakers.
+
+1. Fetch all parents for the chain, filtered by `owner` OR `resolvedOwner`.
+2. Poll with inclusive `updatedAtBlock_gte`, using one cursor per chain and the same owner filter.
+3. Refetch all `partOrders` pages for changed parents, ordered by `sortKey`.
+4. Merge parents by `(chainId, eventId)` and parts by `(chainId, orderUid)`.
+
+New candidates and child order changes update the parent cursor. Parts have no separate cursor.
 
 ## REST endpoints
 

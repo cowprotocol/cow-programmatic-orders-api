@@ -114,8 +114,8 @@ export const conditionalOrderGenerator = onchainTable(
     consecutiveTryNextBlock: t.integer().notNull().default(0),  // Backoff counter for stuck generators
     historyBackfilled: t.boolean().notNull().default(false),    // OwnerBackfill has drained this generator's full /account history
     // Sync cursor: the indexer's processing block of the last client-relevant
-    // change (insert, status change, or any change to a child discrete order).
-    // NOT bumped for polling metadata or standalone allCandidatesKnown flips.
+    // change (insert, status change, or any change to a child part/candidate).
+    // NOT bumped for polling metadata alone.
     updatedAtBlock: t.bigint().notNull(),
     additionalData: t.json().$type<GeneratorAdditionalData>(),  // per-order-type extras; null unless the type defines any (only TWAP today)
   }),

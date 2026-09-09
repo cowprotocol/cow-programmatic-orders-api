@@ -4,7 +4,7 @@ import {
   generateQueryDocs,
 } from "ponder-enrich-gql-docs-middleware";
 
-export const conditionalOrderGeneratorDocs: DocMap = {
+export const conditionalOrderGeneratorDocs = {
   conditionalOrderGenerator:
     "A programmatic order registered on-chain via ComposableCoW.create() or createWithContext(). One row per ConditionalOrderCreated event. Each generator may produce multiple discrete orders over its lifetime.",
   "conditionalOrderGenerator.eventId":
@@ -48,7 +48,7 @@ export const conditionalOrderGeneratorDocs: DocMap = {
   "conditionalOrderGenerator.historyBackfilled":
     "Whether OwnerBackfill has drained this generator's full /account order history from the CoW Orderbook. Applies to non-deterministic types (PerpetualSwap, GoodAfterTime, etc.) whose discrete orders cannot be precomputed. Internal one-time bootstrap flag.",
   "conditionalOrderGenerator.updatedAtBlock":
-    "Incremental-sync cursor: the indexer's processing block of the last client-relevant change — insert, status change, or any change to a child discrete order. NOT the block the change happened on-chain, and NOT bumped for internal polling fields (nextCheckBlock, lastCheckBlock, lastPollResult, consecutiveTryNextBlock, historyBackfilled) or standalone allCandidatesKnown flips, so treat those fields as potentially stale in a cursor-synced cache. To sync: fetch full history once, keep one cursor per chainId, then poll with updatedAtBlock_gte (inclusive — merge rows by (chainId, eventId), duplicates are idempotent), filtering by owner OR resolvedOwner like /orders-by-owner does. Then fetch changed parts via discreteOrder with conditionalOrderGeneratorId_in over the changed generators. Two known gaps, accepted by design: block reorgs may re-apply changes below your cursor (rows heal in the DB but a synced cache can miss them), and Aave-adapter generators created before their owner mapping was discovered keep resolvedOwner = adapter and are only picked up by an owner-filtered cursor query after their next status change.",
+    "Incremental-sync cursor: the indexer's processing block of the last client-relevant change, not the original on-chain event block. Generator inserts, status changes, child discrete-order changes, and new candidates update this cursor. UID precomputation also updates it when it sets allCandidatesKnown. Internal polling fields do not independently update it. Fetch full history once. Keep one cursor per chainId. Poll with updatedAtBlock_gte (inclusive), filtered by owner OR resolvedOwner. Merge generators by (chainId, eventId). Fetch all partOrders pages for changed generators with chainId and conditionalOrderGeneratorId_in. Merge parts by (chainId, orderUid). partOrders includes candidates but has no per-part update cursor. Reorgs can restore database rows at blocks earlier than the client cursor, so a cached view can miss changes. Older Aave-adapter generators can retain the adapter as resolvedOwner. An owner-filtered sync only receives them after their next cursor update.",
   "conditionalOrderGenerator.additionalData":
     "Per-order-type extra data (JSON). Only TWAP populates it today: { executedSellAmount, executedBuyAmount, executedFee } — totals aggregated across the generator's discrete orders, decimal strings in raw token units (fee in the sell token). Null for other order types.",
   "conditionalOrderGenerator.transaction":
@@ -60,4 +60,4 @@ export const conditionalOrderGeneratorDocs: DocMap = {
 
   ...generatePageDocs("conditionalOrderGenerator", "conditional order generator"),
   ...generateQueryDocs("conditionalOrderGenerator", "conditional order generator"),
-};
+} satisfies DocMap;
