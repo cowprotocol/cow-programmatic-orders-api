@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { getTableColumns } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { getTableConfig, getViewConfig, PgDialect } from "drizzle-orm/pg-core";
 import { Hono } from "hono";
@@ -91,6 +92,38 @@ async function queryPage(offset = 0, direction = "asc", status?: string) {
 }
 
 describe("unified part orders GraphQL", () => {
+  it("looks up one TWAP by chain and event ID and excludes other order types", async () => {
+    const lookup = async (chainId: number, eventId: string) => {
+      const response = await app.request("/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query($chainId: Int!, $eventId: String!) {
+            programmaticOrders(where: {chainId: $chainId, eventId: $eventId, orderType: TWAP}, limit: 1) {
+              items { eventId txHash creationDate partOrdersCount }
+              totalCount
+            }
+          }`,
+          variables: { chainId, eventId },
+        }),
+      });
+      const body = await response.json() as {
+        errors?: unknown;
+        data: { programmaticOrders: { items: unknown[]; totalCount: number } };
+      };
+      expect(body.errors).toBeUndefined();
+      return body.data.programmaticOrders;
+    };
+    expect(await lookup(100, "parent")).toEqual({
+      items: [{ eventId: "parent", txHash: "0x01", creationDate: "1000", partOrdersCount: 0 }],
+      totalCount: 1,
+    });
+    expect(await lookup(1, "parent")).toEqual({ items: [], totalCount: 0 });
+    expect(await lookup(100, "missing")).toEqual({ items: [], totalCount: 0 });
+    await client.exec("update conditional_order_generator set order_type = 'StopLoss'");
+    expect(await lookup(100, "parent")).toEqual({ items: [], totalCount: 0 });
+  });
+
   it("exposes view and cursor documentation through introspection", async () => {
     const response = await app.request("/graphql", {
       method: "POST",
@@ -109,6 +142,8 @@ describe("unified part orders GraphQL", () => {
     };
     expect(body.errors).toBeUndefined();
     const types = body.data.__schema.types;
+    const parentFields = types.find((type) => type.name === "programmaticOrder")?.fields?.map(({ name }) => name);
+    expect(parentFields).toEqual(expect.arrayContaining(Object.keys(getTableColumns(schema.conditionalOrderGenerator))));
     for (const name of ["partOrder", "programmaticOrder"]) {
       const type = types.find((type) => type.name === name);
       expect(type?.description).toBeTruthy();
@@ -142,6 +177,26 @@ describe("unified part orders GraphQL", () => {
       if (!query) throw new Error("The view query is missing");
       expect(await getSQLQueryRelations(dialect.sqlToQuery(query).sql)).toEqual(new Set(expected));
     }
+  });
+
+  it("exposes inherited transaction hashes and keeps computed fields filterable", async () => {
+    const response = await app.request("/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query($createdAt: BigInt!, $count: Int!) {
+          programmaticOrders(where: {txHash: "0x01", creationDate_gte: $createdAt, partOrdersCount: $count}) {
+            items { eventId txHash creationDate partOrdersCount }
+          }
+        }`,
+        variables: { createdAt: "1000", count: 0 },
+      }),
+    });
+    expect(await response.json()).toEqual({
+      data: { programmaticOrders: { items: [{
+        eventId: "parent", txHash: "0x01", creationDate: "1000", partOrdersCount: 0,
+      }] } },
+    });
   });
 
   it("returns an empty page and zero parent count before candidates are discovered", async () => {
