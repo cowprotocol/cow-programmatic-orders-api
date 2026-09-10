@@ -27,7 +27,7 @@ Ponder auto-generates the GraphQL schema from the tables and views in `ponder.sc
 High-level map of what's queryable:
 
 - **`partOrder` / `partOrders`** — unified view of discrete orders and unconfirmed candidates. Each `(chainId, orderUid)` appears once, with the discrete row taking precedence.
-- **`programmaticOrder` / `programmaticOrders`** — generator view with `creationDate` and `partOrdersCount`. The count includes all unique known parts, including candidates, but not undiscovered parts.
+- **`programmaticOrder` / `programmaticOrders`** — view with all scalar columns from `conditionalOrderGenerator`. It adds the computed fields `creationDate` and `partOrdersCount`. The count includes all unique known parts, including candidates, but not undiscovered parts.
 - **`conditionalOrderGenerator`** — one row per programmatic order registered via `ComposableCoW.create()` or `createWithContext()`. Holds decoded params, order type, `owner` (raw on-chain address), `resolvedOwner` (looked up in `ownerMapping` at insert time; falls back to `owner` if no mapping exists yet), and lifecycle status.
 - **`discreteOrder`** — individual CoW Protocol orders produced by a generator (a TWAP with 10 parts produces 10 discrete orders). Tracks orderbook status and executed amounts.
 - **`candidateDiscreteOrder`** — unconfirmed discrete orders discovered by the block handler, awaiting confirmation against the orderbook API.
