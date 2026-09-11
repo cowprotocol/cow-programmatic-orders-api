@@ -39,6 +39,8 @@ export const conditionalOrderGeneratorDocs = {
     "Whether all possible discrete orders for this generator have been discovered. True for deterministic types (TWAP, StopLoss) after UID precomputation.",
   "conditionalOrderGenerator.nextCheckBlock":
     "Next block the OrderDiscoveryPoller should check this generator. Internal scheduling field.",
+  "conditionalOrderGenerator.consecutiveTryNextBlock":
+    "Number of consecutive PollTryNextBlock results. The indexer uses this count to increase the delay between retries.",
   "conditionalOrderGenerator.lastCheckBlock":
     "Last block where OrderDiscoveryPoller polled this generator.",
   "conditionalOrderGenerator.lastPollResult":

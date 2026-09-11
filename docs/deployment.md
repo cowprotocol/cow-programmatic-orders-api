@@ -97,7 +97,13 @@ The repo includes a `docker-compose.yml` at the root that starts PostgreSQL 16:
 docker compose up -d
 ```
 
-Copy the matching `DATABASE_URL` and `DATABASE_SCHEMA` into `.env.local` from `.env.example`. Ponder manages schema migrations automatically — it creates or updates the tables within the configured schema on startup; you never run migrations manually.
+Copy the matching `DATABASE_URL` and `DATABASE_SCHEMA` into `.env.local` from `.env.example`.
+
+### Schema Changes
+
+Ponder 0.16.6 creates tables and views in a fresh schema. A development reset drops and recreates them. A production checkpoint resume reuses existing tables and views without updating their definitions. `PONDER_EXPERIMENTAL_DB=platform` permits checkpoint reuse across compatible builds, but does not apply schema migrations.
+
+A change to a view definition requires an explicit migration.
 
 ## Docker
 

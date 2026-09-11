@@ -1,4 +1,5 @@
-import { index, onchainEnum, onchainTable, primaryKey } from "ponder";
+import { index, onchainEnum, onchainTable, primaryKey, type PgColumnsBuilders } from "ponder";
+import type { json } from "drizzle-orm/pg-core";
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
@@ -89,9 +90,11 @@ export const transaction = onchainTable(
   })
 );
 
-export const conditionalOrderGenerator = onchainTable(
-  "conditional_order_generator",
-  (t) => ({
+export const conditionalOrderGeneratorColumns = (
+  t: Pick<PgColumnsBuilders, "text" | "integer" | "hex" | "bigint" | "boolean"> & {
+    json: PgColumnsBuilders["json"] | typeof json;
+  },
+) => ({
     eventId: t.text().notNull(),            // ponder event.id
     chainId: t.integer().notNull(),
     owner: t.hex().notNull(),               // indexed address from event
@@ -118,7 +121,11 @@ export const conditionalOrderGenerator = onchainTable(
     // NOT bumped for polling metadata alone.
     updatedAtBlock: t.bigint().notNull(),
     additionalData: t.json().$type<GeneratorAdditionalData>(),  // per-order-type extras; null unless the type defines any (only TWAP today)
-  }),
+  });
+
+export const conditionalOrderGenerator = onchainTable(
+  "conditional_order_generator",
+  conditionalOrderGeneratorColumns,
   (table) => ({
     pk: primaryKey({ columns: [table.chainId, table.eventId] }),
     ownerIdx: index().on(table.owner),

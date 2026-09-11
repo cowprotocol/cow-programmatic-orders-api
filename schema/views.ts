@@ -1,11 +1,10 @@
 import { bigint, hex, onchainView, sql } from "ponder";
-import { integer, jsonb, text } from "drizzle-orm/pg-core";
+import { boolean, integer, json, text } from "drizzle-orm/pg-core";
 import {
   candidateDiscreteOrder,
   conditionalOrderGenerator,
+  conditionalOrderGeneratorColumns,
   discreteOrder,
-  orderStatusEnum,
-  orderTypeEnum,
   transaction,
 } from "./tables";
 
@@ -44,21 +43,11 @@ export const partOrder = onchainView("part_order", {
 // Views cannot be Drizzle relation targets. Expose the parent count here so it
 // uses the same deduplicated collection as the paginated parts endpoint.
 export const programmaticOrder = onchainView("programmatic_order", {
-  eventId: text("event_id").notNull(),
-  chainId: integer("chain_id").notNull(),
-  hash: hex("hash").notNull(),
-  owner: hex("owner").notNull(),
-  resolvedOwner: hex("resolved_owner"),
-  orderType: orderTypeEnum("order_type").notNull(),
-  status: orderStatusEnum("order_status").notNull(),
-  updatedAtBlock: bigint("updated_at_block").notNull(),
-  additionalData: jsonb("additional_data"),
-  decodedParams: jsonb("decoded_params"),
+  ...conditionalOrderGeneratorColumns({ text, integer, hex, bigint, json, boolean }),
   creationDate: bigint("creation_date").notNull(),
   partOrdersCount: integer("part_orders_count").notNull(),
 }).as(sql`
-  select g.event_id, g.chain_id, g.hash, g.owner, g.resolved_owner, g.order_type,
-    g.order_status, g.updated_at_block, g.additional_data, g.decoded_params,
+  select g.*,
     tx.block_timestamp as creation_date,
     parts.part_orders_count
   from ${conditionalOrderGenerator} g
