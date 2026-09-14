@@ -12,6 +12,8 @@
 //   10     Optimism  0x201efd508c8dfe9de1a13c2452863a78cb2a86cc
 //   43114  Avalanche 0x5c6fb490bdfd3246eb0bb062c168decaf4bd9fdd
 
+import { ALL_DEFINED_CHAINS } from "../chains";
+
 export type OrderType =
   | "TWAP"
   | "StopLoss"
@@ -70,9 +72,11 @@ const GNOSIS_ONLY_HANDLERS: Record<string, OrderType> = {
 };
 
 const HANDLER_MAP: Record<number, Record<string, OrderType>> = {
+  ...Object.fromEntries(
+    ALL_DEFINED_CHAINS.map(({ chainId }) => [chainId, HANDLER_ADDRESS_TO_TYPE]),
+  ),
   1:     { ...HANDLER_ADDRESS_TO_TYPE, ...MAINNET_ONLY_HANDLERS }, // Mainnet
   100:   { ...HANDLER_ADDRESS_TO_TYPE, ...GNOSIS_ONLY_HANDLERS },  // Gnosis Chain
-  42161: {}, // Arbitrum One
 };
 
 /**
