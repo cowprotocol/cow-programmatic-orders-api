@@ -47,13 +47,7 @@ export const ALL_DEFINED_CHAINS: ChainConfig[] = Object.values(
 /**
  * ACTIVE_CHAINS — the chains this indexer instance actually processes.
  *
- * Explicit in-code selection (not env-gated). To enable a chain: add it here and
- * supply its RPC URL through the infrastructure deployment. To disable: remove
- * it from this array. ponder.config.ts derives all RPC/contract config from this
- * array.
- *
- * Inactive-but-defined chains (arbitrum, base, bnb, polygon, avalanche, linea,
- * ink, plasma, sepolia) are fully verified — add one here once its RPC URL is
- * provisioned.
+ * All defined chains are enabled. Supply each chain's RPC URL through the
+ * infrastructure deployment. ponder.config.ts derives its config from this array.
  */
-export const ACTIVE_CHAINS: ChainConfig[] = [mainnet, gnosis];
+export const ACTIVE_CHAINS: ChainConfig[] = ALL_DEFINED_CHAINS;
