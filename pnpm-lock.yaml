@@ -5,9 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  ponder@0.16.6:
-    hash: b362efd5421895e32690aaec54e4b5305326361b1b7746d9956098a42d28d54e
-    path: patches/ponder@0.16.6.patch
+  ponder@0.17.10:
+    hash: 41937d91e4496d4931f320e1883a75e6fe7279cc210f8bd418740979d207590a
+    path: patches/ponder@0.17.10.patch
 
 importers:
 
@@ -32,13 +32,13 @@ importers:
         specifier: ^9.9.0
         version: 9.9.0
       ponder:
-        specifier: ^0.16.6
-        version: 0.16.6(patch_hash=b362efd5421895e32690aaec54e4b5305326361b1b7746d9956098a42d28d54e)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76)
+        specifier: 0.17.10
+        version: 0.17.10(patch_hash=41937d91e4496d4931f320e1883a75e6fe7279cc210f8bd418740979d207590a)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76)
       ponder-enrich-gql-docs-middleware:
         specifier: ^0.1.3
         version: 0.1.3(graphql@16.13.0)(hono@4.12.3)
       viem:
-        specifier: ^2.21.3
+        specifier: ^2.35.0
         version: 2.46.3(typescript@5.9.3)(zod@3.25.76)
       zod:
         specifier: ^3.25.76
@@ -57,7 +57,7 @@ importers:
         specifier: ^0.16.2
         version: 0.16.3(@typescript-eslint/eslint-plugin@6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3))(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)
       typescript:
-        specifier: ^5.2.2
+        specifier: ^5.4.0
         version: 5.9.3
       vite:
         specifier: ^6.0.0
@@ -827,11 +827,11 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@ponder/utils@0.2.18':
-    resolution: {integrity: sha512-pWacQuohfKlKO440zC39C1l6AH+Vx18mca0cPkxM0YnrB70px5hEwLKrc3fU4DMu72j4pljy/Mvfm95FBouYjw==}
+  '@ponder/utils@0.3.0':
+    resolution: {integrity: sha512-7FmIHAKG1mfHA9ptaqN0h9bfYRnqBGAFDfEgXsXS4rxAg513gVR8hGsp1AZon+OPUtIpNRrmhx7bsEk8auiqow==}
     peerDependencies:
-      typescript: '>=5.0.4'
-      viem: '>=2'
+      typescript: '>=5.4.0'
+      viem: '>=2.35'
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -2106,14 +2106,14 @@ packages:
       graphql: ^16.10.0
       hono: ^4.6.19
 
-  ponder@0.16.6:
-    resolution: {integrity: sha512-y4JusgnLZ9uACTr9pj0DjfPSqlsaSLJ7Gxpe/ByfwR5fHuwoPOoolix+Y+9EPqs0cr1KxrG35aVBCR0kT+LJew==}
-    engines: {node: '>=18.14'}
+  ponder@0.17.10:
+    resolution: {integrity: sha512-PP+VBmXuEtu6Is6T/U+v72pHj81Zs/agBAlFW3Yw4pjksKFmINLTAhDDqxGdjnkJo5Ve3TIlRXMYnU7QGJjUSA==}
+    engines: {node: '>=22'}
     hasBin: true
     peerDependencies:
       hono: '>=4.5'
-      typescript: '>=5.0.4'
-      viem: '>=2'
+      typescript: '>=5.4.0'
+      viem: '>=2.35'
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -2159,6 +2159,7 @@ packages:
   prom-client@15.1.3:
     resolution: {integrity: sha512-6ZiOBfCywsD4k1BN9IX0uZhF+tJkV8q8llP64G5Hajs4JOeVLPCwpPVcpXy3BwYiUGgyJzsJJQeOIv7+hDSq8g==}
     engines: {node: ^16 || ^18 || >=20}
+    deprecated: prom-client has been replaced by @prometheus-io/client
 
   protons-runtime@6.0.2:
     resolution: {integrity: sha512-hiyjyANwGcgmzc+tXc1/ZcSZhKnl5MDjaVNWkISHBgadaU0sjTgKIKZMZ62d9J9zlSTyKHCs/osPkQ/3Z+7yeA==}
@@ -3314,7 +3315,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@ponder/utils@0.2.18(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))':
+  '@ponder/utils@0.3.0(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))':
     dependencies:
       viem: 2.46.3(typescript@5.9.3)(zod@3.25.76)
     optionalDependencies:
@@ -4567,7 +4568,7 @@ snapshots:
       graphql: 16.13.0
       hono: 4.12.3
 
-  ponder@0.16.6(patch_hash=b362efd5421895e32690aaec54e4b5305326361b1b7746d9956098a42d28d54e)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76):
+  ponder@0.17.10(patch_hash=41937d91e4496d4931f320e1883a75e6fe7279cc210f8bd418740979d207590a)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76):
     dependencies:
       '@babel/code-frame': 7.29.0
       '@commander-js/extra-typings': 12.1.0(commander@12.1.0)
@@ -4576,7 +4577,7 @@ snapshots:
       '@escape.tech/graphql-armor-max-depth': 2.4.2
       '@escape.tech/graphql-armor-max-tokens': 2.5.1
       '@hono/node-server': 1.19.5(hono@4.12.3)
-      '@ponder/utils': 0.2.18(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))
+      '@ponder/utils': 0.3.0(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))
       abitype: 0.10.3(typescript@5.9.3)(zod@3.25.76)
       ansi-escapes: 7.3.0
       commander: 12.1.0

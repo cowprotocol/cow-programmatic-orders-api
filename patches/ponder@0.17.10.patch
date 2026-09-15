@@ -1,8 +1,8 @@
 diff --git a/dist/esm/indexing-store/cache.js b/dist/esm/indexing-store/cache.js
-index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e11796897456c65e 100644
+index 85d4564ae8341045304a8ab3c6dac6869846f376..86058af6b6c1bd0b252b7da4b7e98e3a48a1a90d 100644
 --- a/dist/esm/indexing-store/cache.js
 +++ b/dist/esm/indexing-store/cache.js
-@@ -157,6 +157,7 @@ export const recoverBatchError = async (values, callback) => {
+@@ -163,6 +163,7 @@ export const recoverBatchError = async (values, callback) => {
  export const createIndexingCache = ({ common, schemaBuild: { schema }, crashRecoveryCheckpoint, eventCount, chainId, }) => {
      let event;
      let qb = undefined;
@@ -10,7 +10,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
      const cache = new Map();
      const insertBuffer = new Map();
      const updateBuffer = new Map();
-@@ -283,11 +284,13 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -277,11 +278,13 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
              return inInsertBuffer || inUpdateBuffer || inDb;
          },
          async flush({ tableNames } = {}) {
@@ -25,7 +25,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
              const flushTable = async (table) => {
                  const shouldRecordBytes = cache.get(table).isCacheComplete;
                  if (tableNames !== undefined &&
-@@ -308,7 +311,7 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -302,7 +305,7 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
                          await copy(table, text);
                      }
                      else {
@@ -34,7 +34,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
                      }
                      common.metrics.ponder_indexing_cache_query_duration.observe({
                          table: getTableName(table),
-@@ -346,15 +349,15 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -340,15 +343,15 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
                WHERE ${primaryKeys
                              .map(({ sql }) => `target."${sql}" = source."${sql}"`)
                              .join(" AND ")};`;
@@ -54,7 +54,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
                              .insert(table)
                              .values(updateValues.map(({ row }) => row))
                              .onConflictDoUpdate({
-@@ -391,10 +394,10 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -385,10 +388,10 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
                  }
              };
              try {
@@ -68,7 +68,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
                  }
                  else {
                      // Note: pglite must run sequentially
-@@ -405,13 +408,20 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -399,13 +402,20 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
              }
              catch (_error) {
                  let error = _error;
@@ -91,7 +91,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
                  for (const table of cache.keys()) {
                      if (tableNames !== undefined &&
                          tableNames.has(getTableName(table)) === false) {
-@@ -424,12 +434,12 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -418,12 +428,12 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
                      const updateValues = Array.from(updateBuffer.get(table).values());
                      if (insertValues.length > 0) {
                          const endClock = startClock();
@@ -107,7 +107,7 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
                          });
                          if (result.status === "error") {
                              error = new DelayedInsertError(result.error.message);
-@@ -471,15 +481,15 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
+@@ -465,15 +475,15 @@ export const createIndexingCache = ({ common, schemaBuild: { schema }, crashReco
                WITH NO DATA;
              `;
                          const endClock = startClock();
@@ -129,10 +129,10 @@ index e2f6a03650b5b80cae9ec4dc0a8837cb054cae18..0d97ae9bf2820459f8744449e1179689
                              error = new DelayedInsertError(result.error.message);
                              error.stack = undefined;
 diff --git a/dist/esm/rpc/actions.js b/dist/esm/rpc/actions.js
-index ae284fa3d3ba39b259175a4e9869a5ea6d4da4a2..f2b9ec8daddabf09685e717c186517d04a5d7d8c 100644
+index 71aa68078fbc4d8ed5a0516c47367af88a451b9b..50e4c641ecc2028e7247f21d8bd16e6b01bb9d69 100644
 --- a/dist/esm/rpc/actions.js
 +++ b/dist/esm/rpc/actions.js
-@@ -766,13 +766,11 @@ export const standardizeLogs = (logs, request) => {
+@@ -776,16 +776,14 @@ export const standardizeLogs = (logs, request) => {
              throw error;
          }
          if (hexToBigInt(log.logIndex) > BigInt(PG_INTEGER_MAX)) {
@@ -152,3 +152,6 @@ index ae284fa3d3ba39b259175a4e9869a5ea6d4da4a2..f2b9ec8daddabf09685e717c186517d0
 +    return logs.filter(
 +        (log) => hexToBigInt(log.logIndex) <= BigInt(PG_INTEGER_MAX),
 +    );
+ };
+ /**
+  * Validate required trace properties and set non-required properties.

@@ -4,7 +4,7 @@ Indexes on-chain events from [CoW Protocol](https://cow.fi)'s ComposableCoW cont
 
 ## Tech stack
 
-- [Ponder](https://ponder.sh) 0.16.x -- blockchain indexing framework
+- [Ponder](https://ponder.sh) 0.17.10 -- blockchain indexing framework
 - TypeScript
 - [viem](https://viem.sh) -- Ethereum interactions and ABI encoding
 - [Hono](https://hono.dev) -- API routing
@@ -12,7 +12,7 @@ Indexes on-chain events from [CoW Protocol](https://cow.fi)'s ComposableCoW cont
 
 ## Quick start
 
-Requires Node.js >= 18.14, [pnpm](https://pnpm.io/), and Docker.
+Requires Node.js >= 22.13, [pnpm](https://pnpm.io/) 11.26.0, and Docker.
 
 ```bash
 git clone git@github.com:cowprotocol/cow-programmatic-orders-api.git
@@ -26,7 +26,7 @@ Copy the env file and configure your RPC endpoints:
 cp .env.example .env.local
 ```
 
-Open `.env.local` and set `MAINNET_RPC_URL` and `GNOSIS_RPC_URL`. Optionally set `<CHAIN>_WS_RPC_URL` (e.g. `MAINNET_WS_RPC_URL`) to enable Ponder realtime WS subscriptions, which are more efficient than HTTP polling.
+Set each active chain's [RPC URL](docs/deployment.md#runtime-configuration) in `.env.local`. Optional `<CHAIN>_WS_RPC_URL` variables enable realtime WebSocket subscriptions.
 
 Start PostgreSQL and run the indexer:
 
@@ -37,7 +37,7 @@ pnpm dev
 
 The GraphQL API is at `http://localhost:42069` once the dev server starts.
 
-> **First run takes time.** The indexer must backfill all on-chain events from the contract's deploy block before it goes live. This can take several hours depending on your RPC endpoint. The API is queryable the whole time — data just fills in progressively.
+> **First run takes time.** Each chain completes its historical backfill before its live sync starts. The API remains queryable with incomplete data until backfill finishes.
 
 ## Is it working?
 
