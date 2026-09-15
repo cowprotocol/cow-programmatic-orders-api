@@ -31,6 +31,7 @@ const settlementChains = ACTIVE_CHAINS.filter(
 );
 
 export default createConfig({
+  ordering: "experimental_isolated",
   chains,
   contracts: {
     ComposableCow: {

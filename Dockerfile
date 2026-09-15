@@ -2,7 +2,7 @@ FROM node:22-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN npm install -g pnpm@10
+RUN npm install -g pnpm@11.26.0
 
 WORKDIR /usr/src/app
 
@@ -24,6 +24,7 @@ ENV NODE_ENV=production
 
 COPY --from=build /usr/src/app ./
 RUN pnpm install --frozen-lockfile \
+    && mkdir -p /pnpm \
     # Run as the non-root `node` user (uid 1000, shipped by node:22-alpine).
     # Ponder writes its cache under the workdir and pnpm reads /pnpm at runtime,
     # so both must be owned by `node`.

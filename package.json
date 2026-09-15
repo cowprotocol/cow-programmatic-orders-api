@@ -2,6 +2,7 @@
   "name": "programmatic-orders-api",
   "version": "0.3.1",
   "private": true,
+  "packageManager": "pnpm@11.26.0",
   "type": "module",
   "scripts": {
     "dev": "pnpm run dev:db && ponder dev --hostname 127.0.0.1",
@@ -21,9 +22,9 @@
     "drizzle-orm": "0.41.0",
     "hono": "^4.5.0",
     "multiformats": "^9.9.0",
-    "ponder": "^0.16.6",
+    "ponder": "0.17.10",
     "ponder-enrich-gql-docs-middleware": "^0.1.3",
-    "viem": "^2.21.3",
+    "viem": "^2.35.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -31,12 +32,12 @@
     "@types/node": "^20.9.0",
     "eslint": "^8.53.0",
     "eslint-config-ponder": "^0.16.2",
-    "typescript": "^5.2.2",
+    "typescript": "^5.4.0",
     "vite": "^6.0.0",
     "vite-tsconfig-paths": "^5.0.0",
     "vitest": "^2.0.0"
   },
   "engines": {
-    "node": ">=18.14"
+    "node": ">=22.13"
   }
 }
