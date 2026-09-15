@@ -59,9 +59,7 @@ copy `.env.example` to `.env.local`.
 
 The indexer is RPC-heavy during initial sync. Rate-limited endpoints will work but sync takes considerably longer. Use an endpoint with generous throughput for production.
 
-The indexer currently processes Ethereum and Gnosis. Chain configuration and
-RPC variables for Arbitrum, Base, BNB, Polygon, Avalanche, Linea, Ink, Plasma,
-and Sepolia are ready for a later rollout.
+`ACTIVE_CHAINS` in `src/chains/index.ts` defines which chains the indexer processes.
 
 > **Adding a new chain:** when a chain is added to `ACTIVE_CHAINS` in `src/chains/index.ts`, its RPC URL env var (defined as `rpcEnvVar` in the chain config file) must be added here and to the infrastructure deployment. The RPC used must be a dedicated/paid one, since the public endpoint rate limits is insuficient for the app. The optional WS RPC URL env var (`wsRpcEnvVar`) may be added the same way to enable realtime WS subscriptions.
 
@@ -70,7 +68,7 @@ and Sepolia are ready for a later rollout.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `DATABASE_SCHEMA` | Yes | PostgreSQL schema name. Production uses `programmatic_orders`. |
+| `DATABASE_SCHEMA` | Yes | PostgreSQL schema name. |
 | `PONDER_EXPERIMENTAL_DB` | Production | Set to `platform` to reuse an existing checkpoint across compatible deployments. |
 
 Example: `DATABASE_URL=postgresql://cow_programmatic:secretpass@localhost:5433/cow_programmatic`
@@ -101,9 +99,11 @@ Copy the matching `DATABASE_URL` and `DATABASE_SCHEMA` into `.env.local` from `.
 
 ### Schema Changes
 
-Ponder 0.16.6 creates tables and views in a fresh schema. A development reset drops and recreates them. A production checkpoint resume reuses existing tables and views without updating their definitions. `PONDER_EXPERIMENTAL_DB=platform` permits checkpoint reuse across compatible builds, but does not apply schema migrations.
+Ponder creates tables and views in a fresh schema. A development reset drops and recreates them. A production checkpoint resume reuses existing tables and views without updating their definitions. `PONDER_EXPERIMENTAL_DB=platform` permits checkpoint reuse across compatible builds, but does not apply schema migrations.
 
 A change to a view definition requires an explicit migration.
+
+Ponder rejects application schemas from a different minor version.
 
 ## Docker
 
@@ -171,7 +171,7 @@ Today one container does both jobs: `pnpm start` runs `ponder start`, which inde
 
 `ponder serve` starts the HTTP server without the indexer. Same image, different command: one container keeps running `ponder start`, a second runs `ponder serve` against the same database and schema, and the public route points at the second one.
 
-Four constraints, read off the installed Ponder 0.16.6:
+Four constraints, read off the installed Ponder version:
 
 | Aspect | Behaviour under `ponder serve` |
 |--------|-------------------------------|

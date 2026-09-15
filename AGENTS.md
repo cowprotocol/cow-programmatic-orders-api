@@ -4,7 +4,7 @@
 
 Ponder-based indexer and GraphQL API for Composable CoW programmatic orders. Indexes on-chain events from the ComposableCoW contract, decodes all supported order types (see `docs/supported-order-types.md`), and exposes queryable data via GraphQL.
 
-**Tech**: Ponder 0.16.x · TypeScript · viem · Hono · PostgreSQL · pnpm
+**Tech**: Ponder 0.17.x · TypeScript · viem · Hono · PostgreSQL · pnpm
 
 ## Architecture
 

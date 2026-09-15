@@ -4,7 +4,9 @@ This document covers how the indexer works, from on-chain events to the GraphQL 
 
 ## Overview
 
-The system is a Ponder 0.16.x indexer that watches the ComposableCoW contract on all active chains (see `ponder.config.ts`). When a user creates a programmatic order (TWAP, Stop Loss, etc.), the contract emits a `ConditionalOrderCreated` event. The indexer picks that up, decodes the order parameters, resolves the actual owner (which may be behind a proxy), and writes the result to Postgres. A Hono HTTP server exposes the data through GraphQL and a SQL passthrough endpoint.
+The system is a Ponder indexer that watches the ComposableCoW contract on all active chains (see `ponder.config.ts`). When a user creates a programmatic order (TWAP, Stop Loss, etc.), the contract emits a `ConditionalOrderCreated` event. The indexer picks that up, decodes the order parameters, resolves the actual owner (which may be behind a proxy), and writes the result to Postgres. A Hono HTTP server exposes the data through GraphQL and a SQL passthrough endpoint.
+
+`ordering: "experimental_isolated"` lets chains sync independently within one shared process and database. It partitions onchain tables by `chain_id`, which must appear in every primary key.
 
 Ponder registers handlers for three independent on-chain event streams: `ComposableCow` (conditional order creation), `CoWShedFactory` (proxy wallet deployment), and `GPv2Settlement` (Aave adapter detection via `Settlement` events — `Trade` logs in the receipt identify the adapter address). During live sync, additional block handlers in `src/application/handlers/block/` (one file per handler) poll contract state and the CoW orderbook API. See that directory for the current handler list and responsibilities. `settlement.ts` detects Aave flash loan adapters and records the flash-loan orders they settle: the `GPv2Settlement:Settlement` event handler does all RPC work inline (each call wrapped in `withTimeout` with its own try/catch, so errors never crash the handler), writing both an `ownerMapping` row and a `flashLoanOrder` row per confirmed adapter.
 
@@ -13,8 +15,6 @@ Ponder registers handlers for three independent on-chain event streams: `Composa
 Configuration lives in `src/chains/` (one file per chain). The ComposableCoW contract is deployed at the same CREATE2 address on every chain (`0xfdaFc9d1902f4e0b84f65F49f244b32b31013b74`), so each chain config only needs to specify the start block per chain.
 
 Currently active chains, their start blocks, and contract addresses are defined in `src/chains/`. To add a chain, create a chain file there and register it in `src/chains/index.ts`.
-
-Stub configs exist for all 12 chains in cow-sdk's `ALL_SUPPORTED_CHAIN_IDS`; contract addresses for the remaining chains need verification before enabling.
 
 `ponder.config.ts` derives all config from `ACTIVE_CHAINS` in `src/chains/index.ts` and wires it into Ponder's `createConfig`. It never contains raw addresses or block numbers directly. It also registers the live-only block handlers in [`src/application/handlers/block/`](../src/application/handlers/block/) (one file per handler; `blockHandler.ts` is a barrel that imports them) — all run during live sync only (`startBlock: "latest"`).
 
