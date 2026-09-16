@@ -1,7 +1,7 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 1; // ~1s per block on Plasma (L2)
+const blockTime = 1; // Seconds/block; 10,000-block average, 2026-09-16
 
 export const plasma: ChainConfig = {
   name: "plasma",

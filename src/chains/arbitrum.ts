@@ -1,7 +1,7 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 1; // ~0.25s avg; use 1s as a conservative estimate for polling math
+const blockTime = 0.3; // Seconds/block; 10,000-block average, 2026-09-16
 
 export const arbitrum: ChainConfig = {
   name: "arbitrum",
