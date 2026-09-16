@@ -1,7 +1,7 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 3; // ~3s per block on BNB Chain
+const blockTime = 0.5; // Seconds/block; 10,000-block average, 2026-09-16
 
 export const bnb: ChainConfig = {
   name: "bnb",

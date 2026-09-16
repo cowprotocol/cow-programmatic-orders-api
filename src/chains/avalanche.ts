@@ -1,7 +1,7 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 2; // ~2s per block on Avalanche C-Chain
+const blockTime = 1.1; // Seconds/block; 10,000-block average, 2026-09-16
 
 export const avalanche: ChainConfig = {
   name: "avalanche",

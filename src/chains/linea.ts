@@ -1,7 +1,7 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 3; // ~3s per block on Linea
+const blockTime = 8.5; // Seconds/block; 100,000-block average, 2026-09-16
 
 export const linea: ChainConfig = {
   name: "linea",

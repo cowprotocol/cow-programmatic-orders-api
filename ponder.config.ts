@@ -93,14 +93,18 @@ export default createConfig({
     // Block handler intervals are tuned per chain to keep total handler time
     // well within the available window while reducing unnecessary invocations.
     //
-    // Candidate and status checks run every block for faster part updates.
+    // Status checks target ~5s, or every block on slower chains.
 
     // OrderDiscoveryPoller — RPC multicall for non-deterministic generators.
+    // Target ~60s to reduce RPC/DB load. TWAP parts are normally precomputed;
+    // only TWAPs whose precompute failed or was skipped use this discovery path.
+    //
+    // Non-deterministic generators examples: PerpetualSwap, GoodAfterTime, TradeAboveThreshold, etc.
     OrderDiscoveryPoller: {
       chain: Object.fromEntries(
         ACTIVE_CHAINS.map((c) => [
           c.name,
-          { startBlock: "latest" as const, interval: c.blockTime < 8 ? 10 : 4 },
+          { startBlock: "latest" as const, interval: Math.max(1, Math.ceil(60 / c.blockTime)) },
         ])
       ),
       interval: 1,
@@ -110,7 +114,7 @@ export default createConfig({
       chain: Object.fromEntries(
         ACTIVE_CHAINS.map((c) => [
           c.name,
-          { startBlock: "latest" as const, interval: 1 },
+          { startBlock: "latest" as const, interval: Math.max(1, Math.ceil(5 / c.blockTime)) },
         ])
       ),
       interval: 1,
@@ -120,7 +124,7 @@ export default createConfig({
       chain: Object.fromEntries(
         ACTIVE_CHAINS.map((c) => [
           c.name,
-          { startBlock: "latest" as const, interval: 1 },
+          { startBlock: "latest" as const, interval: Math.max(1, Math.ceil(5 / c.blockTime)) },
         ])
       ),
       interval: 1,

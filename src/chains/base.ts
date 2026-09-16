@@ -1,7 +1,7 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 2; // ~2s per block on Base
+const blockTime = 2; // Seconds/block; 10,000-block average, 2026-09-16
 
 export const base: ChainConfig = {
   name: "base",

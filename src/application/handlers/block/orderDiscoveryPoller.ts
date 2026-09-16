@@ -1,6 +1,6 @@
 import { ponder, type Context } from "ponder:registry";
 import { candidateDiscreteOrder, conditionalOrderGenerator } from "ponder:schema";
-import { and, asc, eq, lte, or, sql } from "ponder";
+import { and, asc, eq, inArray, lte, or, sql } from "ponder";
 import type { Hex } from "viem";
 import {
   COMPOSABLE_COW_ADDRESS_BY_CHAIN_ID,
@@ -124,7 +124,8 @@ ponder.on("OrderDiscoveryPoller:block", async ({ event, context }) => {
   let neverCount = 0;
   let successCount = 0;
   let backedOffCount = 0;  // tryNextBlock results that exceeded the warmup threshold
-  const successPromises: Promise<unknown>[] = [];
+  const candidates = new Map<string, typeof candidateDiscreteOrder.$inferInsert>();
+  const successfulGenerators: string[] = [];
 
   for (let i = 0; i < dueOrders.length; i++) {
     const result = results[i];
@@ -146,10 +147,8 @@ ponder.on("OrderDiscoveryPoller:block", async ({ event, context }) => {
         }
       }
 
-      successPromises.push(
-        context.db.sql
-          .insert(candidateDiscreteOrder)
-          .values({
+      if (!candidates.has(orderUid.toLowerCase())) {
+        candidates.set(orderUid.toLowerCase(), {
             orderUid: orderUid.toLowerCase(),
             chainId,
             conditionalOrderGeneratorId: order.generatorId,
@@ -159,24 +158,9 @@ ponder.on("OrderDiscoveryPoller:block", async ({ event, context }) => {
             feeAmount: orderData.feeAmount.toString(),
             validTo: orderData.validTo,
             creationDate: event.block.timestamp,
-          })
-          .onConflictDoNothing()
-          .returning({ generatorId: candidateDiscreteOrder.conditionalOrderGeneratorId })
-          .then((inserted) => bumpGeneratorsUpdatedAt(
-            context, chainId, inserted.map((row) => row.generatorId), currentBlock,
-          )),
-      );
-
-      const isSingleShot = SINGLE_SHOT_NON_DETERMINISTIC.includes(order.orderType);
-      successPromises.push(
-        updateGeneratorPollState(context, chainId, order.generatorId, currentBlock, {
-          nextCheckBlock: currentBlock + recheckInterval,
-          lastPollResult: "success",
-          nextCheckTimestamp: null,
-          allCandidatesKnown: isSingleShot ? true : undefined,
-          consecutiveTryNextBlock: 0,
-        }),
-      );
+        });
+      }
+      successfulGenerators.push(order.generatorId);
       successCount++;
     } else {
       const pollResult = parsePollError(result.error);
@@ -260,7 +244,28 @@ ponder.on("OrderDiscoveryPoller:block", async ({ event, context }) => {
     }
   }
 
-  await Promise.all(successPromises);
+  if (candidates.size > 0) {
+    const inserted = await context.db.sql
+      .insert(candidateDiscreteOrder)
+      .values([...candidates.values()])
+      .onConflictDoNothing()
+      .returning({ generatorId: candidateDiscreteOrder.conditionalOrderGeneratorId });
+    await bumpGeneratorsUpdatedAt(context, chainId, inserted.map((row) => row.generatorId), currentBlock);
+    await context.db.sql
+      .update(conditionalOrderGenerator)
+      .set({
+        nextCheckBlock: currentBlock + recheckInterval,
+        lastCheckBlock: currentBlock,
+        lastPollResult: "success",
+        nextCheckTimestamp: null,
+        consecutiveTryNextBlock: 0,
+        allCandidatesKnown: sql`case when ${inArray(conditionalOrderGenerator.orderType, [...SINGLE_SHOT_NON_DETERMINISTIC])} then true else ${conditionalOrderGenerator.allCandidatesKnown} end`,
+      })
+      .where(and(
+        eq(conditionalOrderGenerator.chainId, chainId),
+        inArray(conditionalOrderGenerator.eventId, successfulGenerators),
+      ));
+  }
 
   const capped = dueOrders.length === maxGeneratorsPerBlock;
   log("info", "OrderDiscoveryPoller:DONE", { block: String(currentBlock), chainId, due: dueOrders.length, success: successCount, never: neverCount, backedOff: backedOffCount, capped });
