@@ -78,8 +78,8 @@ it("marks only single-shot successes complete for discovery", async () => {
   await run();
   const { rows } = await client.query("select event_id, all_candidates_known, next_check_block from conditional_order_generator order by event_id");
   expect(rows).toEqual([
-    { event_id: "recurring", all_candidates_known: false, next_check_block: "120" },
-    { event_id: "single", all_candidates_known: true, next_check_block: "120" },
+    { event_id: "recurring", all_candidates_known: false, next_check_block: "136" },
+    { event_id: "single", all_candidates_known: true, next_check_block: "136" },
   ]);
 });
 
@@ -109,11 +109,11 @@ it("does not call RPC for an empty batch or write after a timeout", async () => 
   expect(statements.filter((q) => /^(insert|update)/.test(q))).toHaveLength(0);
 });
 
-it("limits fast-chain polling to five-second status checks and twenty-second discovery", () => {
-  expect(config.blocks.CandidateConfirmer.chain.arbitrum?.interval).toBe(20);
-  expect(config.blocks.OrderStatusTracker.chain.arbitrum?.interval).toBe(20);
-  expect(config.blocks.OrderDiscoveryPoller.chain.arbitrum?.interval).toBe(80);
+it("targets five-second status checks and sixty-second discovery", () => {
+  expect(config.blocks.CandidateConfirmer.chain.arbitrum?.interval).toBe(17);
+  expect(config.blocks.OrderStatusTracker.chain.arbitrum?.interval).toBe(17);
+  expect(config.blocks.OrderDiscoveryPoller.chain.arbitrum?.interval).toBe(200);
   expect(config.blocks.CandidateConfirmer.chain.avalanche?.interval).toBe(5);
-  expect(config.blocks.OrderDiscoveryPoller.chain.avalanche?.interval).toBe(20);
+  expect(config.blocks.OrderDiscoveryPoller.chain.avalanche?.interval).toBe(55);
   expect(config.blocks.CandidateConfirmer.chain.mainnet?.interval).toBe(1);
 });
