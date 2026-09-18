@@ -1,6 +1,6 @@
 {
   "name": "programmatic-orders-api",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "packageManager": "pnpm@11.26.0",
   "type": "module",
