@@ -2,4 +2,4 @@ allowBuilds:
   esbuild: true
   protobufjs: true
 patchedDependencies:
-  ponder@0.17.10: patches/ponder@0.17.10.patch
+  ponder@0.17.11: patches/ponder@0.17.11.patch
