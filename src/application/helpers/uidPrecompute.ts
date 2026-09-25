@@ -100,7 +100,7 @@ export async function precomputeAndDiscover(
   if (!precomputed || precomputed.length === 0) return false;
 
   const uids = precomputed.map((o) => o.orderUid);
-  const statuses = await fetchOrderStatusByUids(context, chainId, uids);
+  const statuses = await fetchOrderStatusByUids(context, chainId, uids, "UidPrecompute");
 
   // Split into two groups and bulk-insert each — one DB roundtrip per table
   // instead of N individual inserts (N can be 500+ for large TWAPs).

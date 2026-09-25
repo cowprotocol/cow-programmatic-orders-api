@@ -194,6 +194,7 @@ export async function fetchOrdersByUids(
   apiBaseUrl: string,
   uids: string[],
   signal?: AbortSignal,
+  source?: { chainId: number; handler: string },
 ): Promise<OrderbookOrder[]> {
   if (uids.length === 0) return [];
 
@@ -220,14 +221,14 @@ export async function fetchOrdersByUids(
         return raw.flatMap((item) => (item?.order != null ? [item.order] : []));
       } catch (err) {
         if (err instanceof OrderbookUnavailableError) {
-          log("error", "ob:unavailable", { endpoint: "ob:byUids", status: err.status, uids: chunk.length, offset: idx * BATCH_SIZE });
+          log("error", "ob:unavailable", { endpoint: "ob:byUids", status: err.status, uids: chunk.length, offset: idx * BATCH_SIZE, ...source });
           return [] as OrderbookOrder[];
         }
         if (err instanceof TimeoutError) {
-          log("warn", "ob:batchFetchTimeout", { uids: chunk.length, offset: idx * BATCH_SIZE, after: ORDERBOOK_HTTP_TIMEOUT_MS });
+          log("warn", "ob:batchFetchTimeout", { uids: chunk.length, offset: idx * BATCH_SIZE, after: ORDERBOOK_HTTP_TIMEOUT_MS, ...source });
           return [] as OrderbookOrder[];
         }
-        log("warn", "ob:batchFetchFailed", { err: String(err), offset: idx * BATCH_SIZE });
+        log("warn", "ob:batchFetchFailed", { err: String(err), offset: idx * BATCH_SIZE, ...source });
         return [] as OrderbookOrder[];
       }
     }),

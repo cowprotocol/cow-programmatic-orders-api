@@ -77,7 +77,7 @@ ponder.on("CandidateConfirmer:block", async ({ event, context }) => {
       let preflightStatuses: Awaited<ReturnType<typeof fetchOrderStatusByUids>>;
       try {
         preflightStatuses = await withTimeout(
-          fetchOrderStatusByUids(context, chainId, orphanCandidates.map((c) => c.orderUid)),
+          fetchOrderStatusByUids(context, chainId, orphanCandidates.map((c) => c.orderUid), "CandidateConfirmer"),
           ORDERBOOK_HTTP_TIMEOUT_MS * 2,
           "CandidateConfirmer:cascade:preflight",
         );
@@ -196,7 +196,7 @@ ponder.on("CandidateConfirmer:block", async ({ event, context }) => {
   if (unconfirmed.length === 0) return;
 
   const uids = unconfirmed.map((c) => c.orderUid);
-  const statuses = await fetchOrderStatusByUids(context, chainId, uids);
+  const statuses = await fetchOrderStatusByUids(context, chainId, uids, "CandidateConfirmer");
 
   const rowsToUpsert: (typeof discreteOrder.$inferInsert)[] = [];
   const confirmedUids: string[] = [];
@@ -295,7 +295,7 @@ ponder.on("CandidateConfirmer:block", async ({ event, context }) => {
   }[];
 
   if (stale.length > 0) {
-    const staleStatuses = await fetchOrderStatusByUids(context, chainId, stale.map((c) => c.orderUid));
+    const staleStatuses = await fetchOrderStatusByUids(context, chainId, stale.map((c) => c.orderUid), "CandidateConfirmer");
 
     // TWAP parts can age out of /by_uids before CandidateConfirmer sees them, causing fulfilled
     // parts to be recorded as "expired". For any missed UIDs, fall back to
