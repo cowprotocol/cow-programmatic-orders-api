@@ -331,6 +331,7 @@ export async function fetchOrderStatusByUids(
   context: Context,
   chainId: number,
   uids: string[],
+  handler = "unspecified",
 ): Promise<Map<string, OrderStatusInfo>> {
   const result = new Map<string, OrderStatusInfo>();
   if (uids.length === 0) return result;
@@ -375,13 +376,13 @@ export async function fetchOrderStatusByUids(
     let fetched: OrderbookOrder[];
     try {
       fetched = await withTimeout(
-        fetchOrdersByUids(apiBaseUrl, toFetch),
+        fetchOrdersByUids(apiBaseUrl, toFetch, undefined, { chainId, handler }),
         ORDERBOOK_HTTP_TIMEOUT_MS * 2,
         "ob:statusByUids",
       );
     } catch (err) {
       if (err instanceof TimeoutError) {
-        log("warn", "ob:statusByUidsTimeout", { chainId, toFetch: toFetch.length, after: ORDERBOOK_HTTP_TIMEOUT_MS * 2 });
+        log("warn", "ob:statusByUidsTimeout", { chainId, handler, toFetch: toFetch.length, after: ORDERBOOK_HTTP_TIMEOUT_MS * 2 });
         // Cache-only map — callers treat missing UIDs as "not on API yet".
         // Stale-but-known entries still answer from cache.
         for (const [uid, info] of staleFallbacks) result.set(uid, info);
@@ -504,7 +505,7 @@ export async function fetchFlashLoanEnrichmentByUids(
   let fetched: OrderbookOrder[];
   try {
     fetched = await withTimeout(
-      fetchOrdersByUids(apiBaseUrl, toFetch),
+      fetchOrdersByUids(apiBaseUrl, toFetch, undefined, { chainId, handler: "FlashLoanEnrichment" }),
       ORDERBOOK_HTTP_TIMEOUT_MS * 2,
       "ob:flashLoanByUids",
     );

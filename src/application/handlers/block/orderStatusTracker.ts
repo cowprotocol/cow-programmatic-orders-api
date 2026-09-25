@@ -56,7 +56,7 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
 
   if (openOrders.length > 0) {
     const uids = openOrders.map((o) => o.orderUid);
-    const statuses = await fetchOrderStatusByUids(context, chainId, uids);
+    const statuses = await fetchOrderStatusByUids(context, chainId, uids, "OrderStatusTracker");
 
     type DiscreteStatus = "open" | "fulfilled" | "unfilled" | "expired" | "cancelled";
     const rowsToUpdate: (typeof discreteOrder.$inferInsert)[] = [];
@@ -185,6 +185,7 @@ ponder.on("OrderStatusTracker:block", async ({ event, context }) => {
         context,
         chainId,
         softCandidates.map((o) => o.orderUid),
+        "OrderStatusTracker",
       );
 
       type SoftStatusInfo = NonNullable<ReturnType<typeof softStatuses.get>>;
