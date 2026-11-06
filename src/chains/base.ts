@@ -1,7 +1,17 @@
 import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
-const blockTime = 2; // Seconds/block; 10,000-block average, 2026-09-16
+// Seconds/block. 200ms since the Denim hardfork (2026-11-05); was 2s before.
+// Settings derived from blockTime keep their wall-clock cadence (OrderDiscoveryPoller
+// ~60s, CandidateConfirmer/OrderStatusTracker ~5s, orderbook recheck 40s).
+// Fixed block counts do NOT scale and now run 10x faster in wall-clock terms:
+// FlashLoanOrderEnricher / OwnerBackfillLive / CancellationWatcher (every 10
+// blocks ≈ 2s), DETERMINISTIC_CANCEL_SWEEP_INTERVAL (100 blocks ≈ 20s) and the
+// TRY_NEXT_BLOCK backoff (≤ 50 blocks, shorter than the poller's 300-block
+// interval, so effectively no backoff). This matches Arbitrum (0.3s blocks).
+// Ponder's finality depth for Base is patched to 300 blocks (~60s) in
+// patches/ponder@0.17.11.patch.
+const blockTime = 0.2;
 
 export const base: ChainConfig = {
   name: "base",
@@ -38,6 +48,6 @@ export const base: ChainConfig = {
     },
   },
   orderbookApiPath: "base",
-  orderbookPollInterval: 40, // ~20 blocks at 2s/block (prior global cadence)
+  orderbookPollInterval: 40, // seconds; = 200 blocks at 200ms/block (was 20 blocks at 2s)
   reorgSafetyWindowSeconds: 1200, // 20 min — covers L1-reorg derived resets
 };
