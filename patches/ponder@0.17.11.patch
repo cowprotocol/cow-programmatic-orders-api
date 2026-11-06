@@ -1,5 +1,5 @@
 diff --git a/dist/esm/indexing-store/cache.js b/dist/esm/indexing-store/cache.js
-index 85d4564ae8341045304a8ab3c6dac6869846f376..86058af6b6c1bd0b252b7da4b7e98e3a48a1a90d 100644
+index 85d4564ae8341045304a8ab3c6dac6869846f376..7f8a02f0ca4ad451704a1059ce2801209075f622 100644
 --- a/dist/esm/indexing-store/cache.js
 +++ b/dist/esm/indexing-store/cache.js
 @@ -163,6 +163,7 @@ export const recoverBatchError = async (values, callback) => {
@@ -129,10 +129,10 @@ index 85d4564ae8341045304a8ab3c6dac6869846f376..86058af6b6c1bd0b252b7da4b7e98e3a
                              error = new DelayedInsertError(result.error.message);
                              error.stack = undefined;
 diff --git a/dist/esm/rpc/actions.js b/dist/esm/rpc/actions.js
-index 71aa68078fbc4d8ed5a0516c47367af88a451b9b..50e4c641ecc2028e7247f21d8bd16e6b01bb9d69 100644
+index ff65bd1e0c2823b3a5d04259be973ca2540df140..ea9199e315810b698f9ac2c7943fbeaf43dc2567 100644
 --- a/dist/esm/rpc/actions.js
 +++ b/dist/esm/rpc/actions.js
-@@ -776,16 +776,14 @@ export const standardizeLogs = (logs, request) => {
+@@ -779,16 +779,14 @@ export const standardizeLogs = (logs, request) => {
              throw error;
          }
          if (hexToBigInt(log.logIndex) > BigInt(PG_INTEGER_MAX)) {
@@ -155,3 +155,21 @@ index 71aa68078fbc4d8ed5a0516c47367af88a451b9b..50e4c641ecc2028e7247f21d8bd16e6b
  };
  /**
   * Validate required trace properties and set non-required properties.
+diff --git a/dist/esm/utils/finality.js b/dist/esm/utils/finality.js
+index 86af3301833e90d47b9fe0f8dabf3098fda5bc6a..0b4d1f1c28950344c2af367e4e9e1c1309d7f1f1 100644
+--- a/dist/esm/utils/finality.js
++++ b/dist/esm/utils/finality.js
+@@ -33,6 +33,13 @@ export function getFinalityBlockCount({ chain }) {
+         case 421613:
+             finalityBlockCount = 240;
+             break;
++        // Base. 200ms blocks since the Denim hardfork (2026-11-05); the default
++        // of 30 blocks would be only ~6s of reorg protection. 300 blocks ≈ 60s,
++        // matching the window Base had at 2s blocks.
++        case 8453:
++        case 84532:
++            finalityBlockCount = 300;
++            break;
+         default:
+             // Assume a 2-second block time, e.g. OP stack chains.
+             finalityBlockCount = 30;

@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  ponder@0.17.11: 41937d91e4496d4931f320e1883a75e6fe7279cc210f8bd418740979d207590a
+  ponder@0.17.11: 4d306f426732f95b605043d8678a392d452375c9721c440985b5c28ec988d555
 
 importers:
 
@@ -31,7 +31,7 @@ importers:
         version: 9.9.0
       ponder:
         specifier: 0.17.11
-        version: 0.17.11(patch_hash=41937d91e4496d4931f320e1883a75e6fe7279cc210f8bd418740979d207590a)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(supports-color@10.2.2)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76)
+        version: 0.17.11(patch_hash=4d306f426732f95b605043d8678a392d452375c9721c440985b5c28ec988d555)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(supports-color@10.2.2)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76)
       ponder-enrich-gql-docs-middleware:
         specifier: ^0.1.3
         version: 0.1.3(graphql@16.13.0)(hono@4.12.3)
@@ -4568,7 +4568,7 @@ snapshots:
       graphql: 16.13.0
       hono: 4.12.3
 
-  ponder@0.17.11(patch_hash=41937d91e4496d4931f320e1883a75e6fe7279cc210f8bd418740979d207590a)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(supports-color@10.2.2)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76):
+  ponder@0.17.11(patch_hash=4d306f426732f95b605043d8678a392d452375c9721c440985b5c28ec988d555)(@opentelemetry/api@1.9.0)(@types/node@20.19.35)(hono@4.12.3)(supports-color@10.2.2)(typescript@5.9.3)(viem@2.46.3(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76):
     dependencies:
       '@babel/code-frame': 7.29.0
       '@commander-js/extra-typings': 12.1.0(commander@12.1.0)
