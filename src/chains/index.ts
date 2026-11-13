@@ -10,6 +10,7 @@ import { plasma } from "./plasma";
 import { avalanche } from "./avalanche";
 import { linea } from "./linea";
 import { ink } from "./ink";
+import { robinhood } from "./robinhood";
 import { sepolia } from "./sepolia";
 
 /**
@@ -30,6 +31,7 @@ export const CHAIN_CONFIGS = {
   [SupportedChainId.AVALANCHE]: avalanche,
   [SupportedChainId.INK]: ink,
   [SupportedChainId.LINEA]: linea,
+  [SupportedChainId.ROBINHOOD]: robinhood,
   [SupportedChainId.SEPOLIA]: sepolia,
   [SupportedChainId.SOLANA]: null,
 } satisfies Record<SupportedChainId, ChainConfig | null>;
