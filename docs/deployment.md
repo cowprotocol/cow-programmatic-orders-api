@@ -55,6 +55,7 @@ copy `.env.example` to `.env.local`.
 | `LINEA_RPC_URL` | When active | Linea RPC endpoint |
 | `INK_RPC_URL` | When active | Ink RPC endpoint |
 | `PLASMA_RPC_URL` | When active | Plasma RPC endpoint |
+| `ROBINHOOD_RPC_URL` | When active | Robinhood Chain RPC endpoint |
 | `<CHAIN>_WS_RPC_URL` | No | WebSocket endpoint for an active chain; falls back to HTTP polling when unset |
 
 The indexer is RPC-heavy during initial sync. Rate-limited endpoints will work but sync takes considerably longer. Use an endpoint with generous throughput for production.

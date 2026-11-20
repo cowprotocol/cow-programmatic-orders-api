@@ -156,10 +156,10 @@ index ff65bd1e0c2823b3a5d04259be973ca2540df140..ea9199e315810b698f9ac2c7943fbeaf
  /**
   * Validate required trace properties and set non-required properties.
 diff --git a/dist/esm/utils/finality.js b/dist/esm/utils/finality.js
-index 86af3301833e90d47b9fe0f8dabf3098fda5bc6a..0b4d1f1c28950344c2af367e4e9e1c1309d7f1f1 100644
+index 86af3301833e90d47b9fe0f8dabf3098fda5bc6a..7c771003578653bd3400daecf1add531b341c9ba 100644
 --- a/dist/esm/utils/finality.js
 +++ b/dist/esm/utils/finality.js
-@@ -33,6 +33,13 @@ export function getFinalityBlockCount({ chain }) {
+@@ -33,6 +33,18 @@ export function getFinalityBlockCount({ chain }) {
          case 421613:
              finalityBlockCount = 240;
              break;
@@ -169,6 +169,11 @@ index 86af3301833e90d47b9fe0f8dabf3098fda5bc6a..0b4d1f1c28950344c2af367e4e9e1c13
 +        case 8453:
 +        case 84532:
 +            finalityBlockCount = 300;
++            break;
++        // Robinhood Chain (Arbitrum Orbit). 100ms blocks; 600 blocks ≈ 60s,
++        // the same window as Arbitrum and Base.
++        case 4663:
++            finalityBlockCount = 600;
 +            break;
          default:
              // Assume a 2-second block time, e.g. OP stack chains.
