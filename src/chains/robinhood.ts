@@ -2,6 +2,13 @@ import { SupportedChainId } from "@cowprotocol/cow-sdk";
 import { type ChainConfig } from "./types";
 
 // Seconds/block; 0.105 over 1,000,000 blocks, 2026-11-13.
+// Settings derived from blockTime keep their wall-clock cadence (OrderDiscoveryPoller
+// ~60s, CandidateConfirmer/OrderStatusTracker ~5s, orderbook recheck 40s).
+// Fixed block counts do NOT scale with blockTime:
+// FlashLoanOrderEnricher / OwnerBackfillLive / CancellationWatcher (every 10
+// blocks ≈ 1s), DETERMINISTIC_CANCEL_SWEEP_INTERVAL (100 blocks ≈ 10s) and the
+// TRY_NEXT_BLOCK backoff (≤ 50 blocks, shorter than the poller's 600-block
+// interval, so effectively no backoff).
 // Ponder's finality depth for 4663 is patched to 600 blocks (~60s) in
 // patches/ponder@0.17.11.patch. Ponder resolves it (and the multicall3 address)
 // from viem/chains, which only knows Robinhood Chain from viem 2.55.0.
