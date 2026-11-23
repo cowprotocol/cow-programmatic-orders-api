@@ -62,7 +62,7 @@ The indexer is RPC-heavy during initial sync. Rate-limited endpoints will work b
 
 `ACTIVE_CHAINS` in `src/chains/index.ts` defines which chains the indexer processes.
 
-> **Adding a new chain:** when a chain is added to `ACTIVE_CHAINS` in `src/chains/index.ts`, its RPC URL env var (defined as `rpcEnvVar` in the chain config file) must be added here and to the infrastructure deployment. The RPC used must be a dedicated/paid one, since the public endpoint rate limits is insuficient for the app. The optional WS RPC URL env var (`wsRpcEnvVar`) may be added the same way to enable realtime WS subscriptions.
+> **Adding a new chain:** when a chain is added to `ACTIVE_CHAINS` in `src/chains/index.ts`, its RPC URL env var (defined as `rpcEnvVar` in the chain config file) must be added here and to the infrastructure deployment. The RPC used must be a dedicated/paid one, since the public endpoint rate limits is insuficient for the app. The optional WS RPC URL env var (`wsRpcEnvVar`) may be added the same way to enable realtime WS subscriptions. The same deploy must also change `DATABASE_SCHEMA` to a new schema name (see [Schema Changes](#schema-changes)).
 
 ### Database
 
@@ -103,6 +103,8 @@ Copy the matching `DATABASE_URL` and `DATABASE_SCHEMA` into `.env.local` from `.
 Ponder creates tables and views in a fresh schema. A development reset drops and recreates them. A production checkpoint resume reuses existing tables and views without updating their definitions. `PONDER_EXPERIMENTAL_DB=platform` permits checkpoint reuse across compatible builds, but does not apply schema migrations.
 
 A change to a view definition requires an explicit migration.
+
+Adding a chain is a schema change. With `ordering: "experimental_isolated"`, every table is partitioned by chain, and Ponder creates the partitions only when it creates the schema. A checkpoint resume never adds them. A chain added to an existing schema has no tables, so the indexer crashes on that chain's first event and stops indexing every chain. Deploy the new chain together with a new `DATABASE_SCHEMA`.
 
 Ponder rejects application schemas from a different minor version.
 
@@ -219,7 +221,7 @@ A fresh deployment (no prior `ponder_sync` cache) reindexes from the configured 
 | Live-sync catch-up | 5–15 minutes | Block handlers (OrderDiscoveryPoller, CandidateConfirmer, OrderStatusTracker, OwnerBackfillLive, CancellationWatcher) run at "latest". Stale TWAP candidates drain at 500/block; OwnerBackfillLive drains every non-deterministic owner's history from the tip onward. |
 | Full data completeness | Reported by `/readyz` | All generators have candidates or discrete orders; every non-deterministic owner's history is drained (`historyBackfilled` complete). `/readyz` turns 200 only here. |
 
-A reindex that reuses an existing `ponder_sync` cache (same chain, same start blocks) skips the event backfill and completes in minutes.
+A reindex that reuses an existing `ponder_sync` cache (same chain, same start blocks) skips most RPC fetching, but still re-runs every handler from the start blocks. On busy chains this can take over an hour, and the API serves incomplete data until `/readyz` turns 200.
 
 ### `/ready` vs `/readyz` Semantics
 
